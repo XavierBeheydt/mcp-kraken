@@ -27,13 +27,15 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
         return await client.private("TradeBalance", {"asset": asset})
 
     @mcp.tool(tags={"private", "account"})
-    async def get_trade_volume(pair: list[str] | None = None) -> Any:
+    async def get_trade_volume(
+        pair: list[str] = [],  # noqa: B006
+    ) -> Any:
         """Return 30-day volume and current fee tier for the requested pairs."""
         return await client.private("TradeVolume", drop_none({"pair": csv(pair)}))
 
     @mcp.tool(tags={"private", "account"})
     async def get_ledgers(
-        asset: list[str] | None = None,
+        asset: list[str] = [],  # noqa: B006
         aclass: str | None = None,
         type: str | None = None,
         start: int | None = None,
@@ -98,7 +100,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
         report: str,
         description: str,
         format: str | None = None,
-        fields: list[str] | None = None,
+        fields: list[str] = [],  # noqa: B006
         starttm: int | None = None,
         endtm: int | None = None,
     ) -> Any:

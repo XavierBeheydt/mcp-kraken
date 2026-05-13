@@ -133,7 +133,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
 
     @mcp.tool(tags={"private", "trading"})
     async def get_open_positions(
-        txid: list[str] | None = None,
+        txid: list[str] = [],  # noqa: B006
         docalcs: bool | None = None,
         consolidation: str | None = None,
     ) -> Any:
@@ -166,7 +166,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
         price: str | None = None,
         price2: str | None = None,
         leverage: str | None = None,
-        oflags: list[str] | None = None,
+        oflags: list[str] = [],  # noqa: B006
         timeinforce: str | None = None,
         starttm: str | None = None,
         expiretm: str | None = None,
@@ -293,7 +293,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
         volume: str | None = None,
         price: str | None = None,
         price2: str | None = None,
-        oflags: list[str] | None = None,
+        oflags: list[str] = [],  # noqa: B006
         deadline: str | None = None,
         cancel_response: bool | None = None,
         userref: int | None = None,

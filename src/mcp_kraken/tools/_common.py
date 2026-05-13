@@ -13,7 +13,11 @@ def drop_none(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def csv(values: list[str] | None) -> str | None:
-    """Render a list as a comma-separated string, or None for omission."""
-    if values is None:
+    """Render a list as a comma-separated string, or None for omission.
+
+    Treats an empty list the same as None — Kraken expects the parameter to
+    be absent rather than empty.
+    """
+    if not values:
         return None
     return ",".join(values)

@@ -24,7 +24,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
 
     @mcp.tool(tags={"public", "market-data"})
     async def get_assets(
-        asset: list[str] | None = None,
+        asset: list[str] = [],  # noqa: B006
         aclass: str | None = None,
     ) -> Any:
         """Return info about one or more assets.
@@ -40,7 +40,7 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
 
     @mcp.tool(tags={"public", "market-data"})
     async def get_asset_pairs(
-        pair: list[str] | None = None,
+        pair: list[str] = [],  # noqa: B006
         info: str | None = None,
         country_code: str | None = None,
     ) -> Any:
@@ -57,7 +57,9 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
         )
 
     @mcp.tool(tags={"public", "market-data"})
-    async def get_ticker(pair: list[str] | None = None) -> Any:
+    async def get_ticker(
+        pair: list[str] = [],  # noqa: B006
+    ) -> Any:
         """Return ticker data (ask, bid, last, vol, etc.) for the given pairs."""
         return await client.public("Ticker", drop_none({"pair": csv(pair)}))
 
