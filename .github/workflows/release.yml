@@ -4,33 +4,27 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
-  # Manual re-run: `gh workflow run release.yml --ref vX.Y.Z`
-  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write  # for sigstore / provenance
+  contents: read
 
 jobs:
   test:
     uses: ./.github/workflows/test.yml
 
-  publish-image:
+  build-dist:
     needs: test
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.value }}
-      is_latest: ${{ steps.ranking.outputs.is_latest }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          fetch-tags: true
 
       - name: Derive version from tag
         id: version
@@ -39,23 +33,36 @@ jobs:
           echo "value=$v" >> "$GITHUB_OUTPUT"
           echo "Releasing v$v"
 
-      - name: Determine if this tag is the highest semver release in the repo
-        # Guards against the race when several release runs publish in
-        # parallel: only the build for the newest non-prerelease tag is
-        # allowed to push :latest and mark the GitHub Release as latest.
-        id: ranking
-        run: |
-          current="${GITHUB_REF#refs/tags/}"
-          highest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' \
-                    | grep -vE '-' \
-                    | sort -V \
-                    | tail -1)
-          if [ "$current" = "$highest" ]; then
-            echo "is_latest=true"  >> "$GITHUB_OUTPUT"
-          else
-            echo "is_latest=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "current=$current highest=$highest"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 14
+
+  publish-image:
+    needs: [test, build-dist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -79,7 +86,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ steps.ranking.outputs.is_latest == 'true' }}
+            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -95,11 +102,48 @@ jobs:
           provenance: true
           sbom: true
 
+  publish-pypi:
+    if: ${{ !contains(github.ref, '-') }}
+    needs: [test, build-dist]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mcp-kraken
+    permissions:
+      id-token: write  # required for OIDC trusted publishing
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-testpypi:
+    if: ${{ contains(github.ref, '-') }}
+    needs: [test, build-dist]
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/mcp-kraken
+    permissions:
+      id-token: write
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
   fast-forward-main:
-    # Fast-forward main to the tagged commit on dev. The tag must point to
-    # a commit already on `dev`; otherwise the FF push fails and you need
-    # to merge manually.
-    needs: publish-image
+    needs: [publish-image, build-dist]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -122,26 +166,39 @@ jobs:
           git push origin main
 
   github-release:
-    needs: publish-image
+    needs: [publish-image, build-dist]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Generate release notes
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Generate release notes & attach artifacts
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-') }}
-          # Only the build for the highest semver in the repo is allowed to
-          # carry the "Latest release" badge. Setting `make_latest: legacy`
-          # otherwise tells GitHub to use its default heuristic (most recent
-          # publish), which loses the race when older tags publish after.
-          make_latest: ${{ needs.publish-image.outputs.is_latest == 'true' && 'true' || 'false' }}
-          name: v${{ needs.publish-image.outputs.version }}
+          name: v${{ needs.build-dist.outputs.version }}
+          files: dist/*
           body: |
-            Docker image:
+            ## Install
+
+            From PyPI:
+            ```bash
+            pip install mcp-kraken==${{ needs.build-dist.outputs.version }}
+            # or
+            uv add mcp-kraken==${{ needs.build-dist.outputs.version }}
             ```
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.publish-image.outputs.version }}
+
+            Docker:
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ needs.build-dist.outputs.version }}
             ```

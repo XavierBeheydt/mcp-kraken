@@ -62,7 +62,7 @@ dependencies by hand. Never invent versions: let uv pick.
 ## Auth model — two boundaries
 
 | Boundary                              | Mechanism                                  |
-|---------------------------------------|--------------------------------------------|
+| ------------------------------------- | ------------------------------------------ |
 | MCP client → mcp-kraken (you control) | Opaque bearer tokens, SHA-256 hashed in DB |
 | mcp-kraken → Kraken                   | `KRAKEN_API_KEY` + HMAC-SHA512 signature   |
 
@@ -98,6 +98,10 @@ Kraken itself enforce permissions over the wire. That fallback is in
   (`:X.Y.Z`, `:X.Y`, `:X`, plus `:latest` for non-prereleases), publishes a
   GitHub Release with auto-generated notes, and fast-forwards `main` to the
   tag.
+- Tagging `vX.Y.Z` also publishes the package to **PyPI** via OIDC
+  trusted publishing (no token stored). Prerelease tags `vX.Y.Z-rcN` go to
+  TestPyPI instead. Setup lives on PyPI's "publishing" page and in the
+  GitHub `pypi` / `testpypi` environments.
 
 ## Style conventions
 
