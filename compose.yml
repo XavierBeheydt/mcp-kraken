@@ -1,0 +1,40 @@
+name: mcp-kraken
+
+services:
+  mcp-kraken:
+    image: ghcr.io/xavierbeheydt/mcp-kraken:latest
+    # For local development, build from source instead:
+    # build:
+    #   context: .
+    #   dockerfile: docker/Dockerfile
+    container_name: mcp-kraken
+    restart: unless-stopped
+    ports:
+      - "${MCP_KRAKEN_PORT:-8765}:8765"
+    environment:
+      KRAKEN_API_KEY: ${KRAKEN_API_KEY:?KRAKEN_API_KEY is required}
+      KRAKEN_API_SECRET: ${KRAKEN_API_SECRET:?KRAKEN_API_SECRET is required}
+      MCP_KRAKEN_HOST: "0.0.0.0"
+      MCP_KRAKEN_PORT: "8765"
+      MCP_KRAKEN_PATH: "/mcp"
+      MCP_KRAKEN_LOG_LEVEL: ${MCP_KRAKEN_LOG_LEVEL:-INFO}
+      MCP_KRAKEN_TOKEN_DB: "/data/tokens.db"
+    volumes:
+      - mcp-kraken-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8765/mcp/\", timeout=3)' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    cap_drop:
+      - ALL
+
+volumes:
+  mcp-kraken-data:
+    driver: local

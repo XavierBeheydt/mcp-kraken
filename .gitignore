@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+.installed.cfg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+# uv.lock is committed — used for reproducible installs
+
+# Hatch-VCS generated version file
+src/mcp_kraken/_version.py
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+
+# Type checkers
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Runtime data (auth tokens DB, logs)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.log
+
+# TLS material (do not commit private keys / certs)
+certs/
+*.pem
+*.key
+*.crt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
