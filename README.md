@@ -14,6 +14,13 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 
+> [!WARNING]
+> **Alpha software.** Interfaces and defaults may change in any minor release
+> until v1.0. **No liability** for any financial loss, missed trades or
+> misrouted withdrawals. Not financial advice. Not affiliated with Kraken or
+> Payward Inc. See the full [Disclaimer](#disclaimer) below before granting
+> the server credentials with trading or withdrawal permissions.
+
 An MCP server that exposes the [Kraken](https://www.kraken.com/) cryptocurrency
 exchange Spot REST API over HTTP, secured with bearer tokens you manage
 locally.
@@ -288,3 +295,30 @@ Branch conventions:
 To prerelease, tag `v1.2.3-rc1`: the workflow builds and pushes
 `1.2.3-rc1`, `1.2-rc1`, `1-rc1`, marks the GitHub Release as prerelease, and
 does not publish the `:latest` tag.
+
+## Disclaimer
+
+> [!CAUTION]
+> Read this section before pointing `mcp-kraken` at a Kraken API key with
+> trading or withdrawal permissions.
+
+**Alpha software.** Tool signatures, default behaviours, configuration keys
+and the on-disk token format may change in any minor release until v1.0.
+Run a non-production instance against a read-only Kraken API key first,
+and read each tool's docstring before granting the server credentials with
+trading or withdrawal permissions.
+
+**No liability.** The software is provided *as is*, without warranty of any
+kind, express or implied. The author is **not responsible** for any direct,
+indirect, incidental, or consequential financial loss arising from the use,
+misuse or unavailability of this software — including but not limited to
+misrouted withdrawals, unintended trades, missed executions, exchange
+downtime, API rate-limit hits, or compromised credentials.
+
+**Not financial advice.** Nothing in this software, its documentation, or
+any tool output constitutes investment, trading, tax or legal advice. You
+are solely responsible for the decisions you make and the orders you submit.
+
+**Not affiliated with Kraken or Payward Inc.** "Kraken" is a trademark of
+its respective owner. This project is an independent client of the public
+Kraken REST API, written against the publicly documented API surface.
