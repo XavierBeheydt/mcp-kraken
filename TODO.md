@@ -35,6 +35,7 @@ Tracks features deferred beyond the initial REST-only release.
 - [ ] Healthcheck endpoint that probes Kraken `SystemStatus`
 - [ ] OpenTelemetry tracing
 - [ ] Token rotation helpers in the CLI (`token rotate <id>`)
+- [ ] Docker image compatibility with secrets (e.g., Docker Secrets or Kubernetes Secrets)
 
 ## Quality of life
 
