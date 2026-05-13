@@ -1,5 +1,16 @@
 # mcp-kraken
 
+[![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
+[![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
+[![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
+[![GHCR](https://img.shields.io/github/v/tag/XavierBeheydt/mcp-kraken?label=ghcr.io&logo=docker&color=2496ED&sort=semver)](https://github.com/XavierBeheydt/mcp-kraken/pkgs/container/mcp-kraken)
+[![PyPI](https://img.shields.io/pypi/v/mcp-kraken.svg?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-kraken/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-kraken.svg?logo=python&logoColor=white)](https://pypi.org/project/mcp-kraken/)
+[![Downloads](https://img.shields.io/pypi/dm/mcp-kraken.svg)](https://pypi.org/project/mcp-kraken/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+
 An MCP server that exposes the [Kraken](https://www.kraken.com/) cryptocurrency
 exchange Spot REST API over HTTP, secured with bearer tokens you manage
 locally.
