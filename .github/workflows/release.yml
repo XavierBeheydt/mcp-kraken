@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
+  # Manual re-run: `gh workflow run release.yml --ref vX.Y.Z`
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
@@ -23,10 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.value }}
+      is_latest: ${{ steps.ranking.outputs.is_latest }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Derive version from tag
         id: version
@@ -34,6 +38,24 @@ jobs:
           v="${GITHUB_REF#refs/tags/v}"
           echo "value=$v" >> "$GITHUB_OUTPUT"
           echo "Releasing v$v"
+
+      - name: Determine if this tag is the highest semver release in the repo
+        # Guards against the race when several release runs publish in
+        # parallel: only the build for the newest non-prerelease tag is
+        # allowed to push :latest and mark the GitHub Release as latest.
+        id: ranking
+        run: |
+          current="${GITHUB_REF#refs/tags/}"
+          highest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' \
+                    | grep -vE '-' \
+                    | sort -V \
+                    | tail -1)
+          if [ "$current" = "$highest" ]; then
+            echo "is_latest=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "current=$current highest=$highest"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -57,7 +79,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+            type=raw,value=latest,enable=${{ steps.ranking.outputs.is_latest == 'true' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -112,6 +134,11 @@ jobs:
         with:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-') }}
+          # Only the build for the highest semver in the repo is allowed to
+          # carry the "Latest release" badge. Setting `make_latest: legacy`
+          # otherwise tells GitHub to use its default heuristic (most recent
+          # publish), which loses the race when older tags publish after.
+          make_latest: ${{ needs.publish-image.outputs.is_latest == 'true' && 'true' || 'false' }}
           name: v${{ needs.publish-image.outputs.version }}
           body: |
             Docker image:
