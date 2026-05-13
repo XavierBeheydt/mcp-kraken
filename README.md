@@ -1,6 +1,6 @@
 # mcp-kraken
 
-[![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
+[![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
 [![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
 [![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
 [![CodeQL](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/security/code-scanning)
