@@ -1,0 +1,57 @@
+name: codeql
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    # Weekly drift scan — runs even when nothing else triggers CodeQL.
+    # Wed 04:33 UTC keeps it out of peak hours.
+    - cron: "33 4 * * 3"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  # Required to upload SARIF results to the Security tab.
+  security-events: write
+  # Required by github/codeql-action for private repos / Actions analysis.
+  actions: read
+  packages: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            build-mode: none
+          # Also analyse the workflow files themselves — catches workflow
+          # injection vulnerabilities, missing pinning, dangerous `permissions`.
+          - language: actions
+            build-mode: none
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-and-quality
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

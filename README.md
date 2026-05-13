@@ -3,6 +3,7 @@
 [![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
 [![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
 [![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
+[![CodeQL](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/security/code-scanning)
 [![GHCR](https://img.shields.io/github/v/tag/XavierBeheydt/mcp-kraken?label=ghcr.io&logo=docker&color=2496ED&sort=semver)](https://github.com/XavierBeheydt/mcp-kraken/pkgs/container/mcp-kraken)
 [![PyPI](https://img.shields.io/pypi/v/mcp-kraken.svg?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-kraken/)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-kraken.svg?logo=python&logoColor=white)](https://pypi.org/project/mcp-kraken/)
