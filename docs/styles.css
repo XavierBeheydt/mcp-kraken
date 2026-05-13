@@ -1,0 +1,479 @@
+/* ============================================================================
+   mcp-kraken landing page — Kraken-inspired dark theme
+
+   Palette
+     primary purple    #7132F5   accent / CTA / links
+     primary-soft      #A78BFA   highlights, gradients
+     bg                #0B0D14   page background (very dark navy)
+     surface           #11141F   cards, code blocks
+     surface-2         #181C2A   raised surfaces
+     border            #232839   subtle borders
+     text              #E8EAF1   primary text
+     text-muted        #8E94A8   secondary text
+     buy               #22C55E   exchange green (unused but kept for future)
+     sell              #EF4444   exchange red
+
+   Light theme variant kicks in via prefers-color-scheme.
+   ========================================================================= */
+
+:root {
+  --primary: #7132f5;
+  --primary-soft: #a78bfa;
+  --primary-hover: #5e1de0;
+  --bg: #0b0d14;
+  --surface: #11141f;
+  --surface-2: #181c2a;
+  --border: #232839;
+  --text: #e8eaf1;
+  --text-muted: #8e94a8;
+  --buy: #22c55e;
+  --sell: #ef4444;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --maxw: 1100px;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fafaff;
+    --surface: #ffffff;
+    --surface-2: #f4f4fb;
+    --border: #e4e6f0;
+    --text: #1a1d2e;
+    --text-muted: #5b6076;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background:
+    radial-gradient(
+      ellipse 1200px 600px at 50% -100px,
+      rgba(113, 50, 245, 0.18),
+      transparent 60%
+    ),
+    var(--bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--primary-soft);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+a:hover {
+  color: var(--primary);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+  color: var(--primary-soft);
+}
+
+/* ============================================================ Alpha banner */
+.alpha-banner {
+  background: linear-gradient(
+    90deg,
+    rgba(239, 68, 68, 0.18),
+    rgba(239, 68, 68, 0.08)
+  );
+  border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  padding: 0.75rem 1.5rem;
+  text-align: center;
+}
+.alpha-banner strong {
+  color: #ff9b9b;
+}
+
+/* ============================================================ Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 13, 20, 0.6);
+  border-bottom: 1px solid transparent;
+}
+@media (prefers-color-scheme: light) {
+  .site-header {
+    background: rgba(250, 250, 255, 0.7);
+  }
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.brand:hover {
+  color: var(--text);
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.site-nav a {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.site-nav a:hover {
+  color: var(--text);
+}
+@media (max-width: 720px) {
+  .site-nav a:not(.cta) {
+    display: none;
+  }
+}
+
+/* ============================================================ Main shell */
+main {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+section {
+  padding: 4rem 0;
+  border-top: 1px solid var(--border);
+}
+section:first-of-type {
+  border-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+}
+h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  margin-bottom: 2rem;
+}
+h3 {
+  font-size: 1.1rem;
+}
+h4 {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+p {
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+/* ============================================================ Hero */
+.hero {
+  padding: 5rem 0 4rem;
+  border-top: 0;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  background: rgba(113, 50, 245, 0.12);
+  border: 1px solid rgba(113, 50, 245, 0.3);
+  border-radius: 999px;
+  color: var(--primary-soft);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+.hero-eyebrow .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary-soft);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--primary);
+}
+.hero h1 {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+}
+.hero-accent {
+  background: linear-gradient(135deg, var(--primary-soft), var(--primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero-lede {
+  font-size: 1.2rem;
+  max-width: 640px;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.hero-badges img {
+  height: 20px;
+}
+
+/* ============================================================ CTAs */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition:
+    background 120ms ease,
+    transform 80ms ease,
+    border-color 120ms ease;
+  white-space: nowrap;
+}
+.cta-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+.cta-primary:hover {
+  background: var(--primary-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.cta-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 1.1rem;
+}
+.cta-ghost:hover {
+  border-color: var(--primary);
+  color: var(--primary-soft);
+}
+
+/* ============================================================ Features grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: border-color 150ms ease;
+}
+.card:hover {
+  border-color: rgba(113, 50, 245, 0.4);
+}
+.card-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.card h3 {
+  color: var(--text);
+}
+.card p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ============================================================ Quickstart */
+.quickstart pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  margin: 0;
+}
+.quickstart code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.quickstart .comment {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.quickstart .prompt {
+  color: var(--primary-soft);
+  user-select: none;
+}
+
+/* ============================================================ Tools */
+.tool-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+.tool-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+.tool-group p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.tool-group code {
+  font-size: 0.82rem;
+  padding: 0.05em 0.35em;
+  margin: 0.05rem 0.05rem;
+  display: inline-block;
+}
+.tag {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.tag-public {
+  color: var(--buy);
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.tag-private {
+  color: var(--primary-soft);
+  background: rgba(113, 50, 245, 0.1);
+  border-color: rgba(113, 50, 245, 0.3);
+}
+
+/* ============================================================ Disclaimer */
+.disclaimer-box {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(239, 68, 68, 0.06),
+      rgba(239, 68, 68, 0.02)
+    ),
+    var(--surface);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left-width: 4px;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+}
+.disclaimer-box p {
+  color: var(--text);
+  font-size: 0.95rem;
+  margin: 0 0 0.9rem;
+}
+.disclaimer-box p:last-child {
+  margin-bottom: 0;
+}
+.disclaimer-box strong {
+  color: #ffb4b4;
+}
+
+/* ============================================================ Roadmap */
+.roadmap ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.5rem;
+}
+.roadmap li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  position: relative;
+  padding-left: 2.5rem;
+}
+.roadmap li::before {
+  content: "→";
+  position: absolute;
+  left: 1rem;
+  color: var(--primary-soft);
+  font-weight: 700;
+}
+
+/* ============================================================ Footer */
+.site-footer {
+  max-width: var(--maxw);
+  margin: 2rem auto 0;
+  padding: 2.5rem 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+.footer-fineprint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}

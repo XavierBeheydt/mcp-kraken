@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>mcp-kraken — Kraken Spot REST API as an MCP server</title>
+    <meta
+      name="description"
+      content="MCP server exposing the Kraken cryptocurrency exchange Spot REST API over HTTP with bearer-token authentication."
+    />
+
+    <meta property="og:title" content="mcp-kraken" />
+    <meta
+      property="og:description"
+      content="Talk to Kraken from any MCP client — full Spot REST API mapped to typed tools, bearer-auth HTTP, Docker-ready."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://xavierbeheydt.github.io/mcp-kraken/" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div class="alpha-banner" role="alert">
+      <strong>Alpha software.</strong> Use at your own risk. The author accepts
+      <strong>no liability</strong> for any financial loss, missed trades or
+      misrouted withdrawals. Test against a read-only API key first and review
+      every tool call before granting credentials with trading or withdraw
+      permissions.
+    </div>
+
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="mcp-kraken home">
+        <svg
+          class="brand-mark"
+          viewBox="0 0 32 32"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#A78BFA" />
+              <stop offset="100%" stop-color="#7132F5" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z"
+            fill="none"
+            stroke="url(#logo-grad)"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M11 12 L11 20 M16 9 L16 23 M21 12 L21 20"
+            stroke="url(#logo-grad)"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span class="brand-name">mcp-kraken</span>
+      </a>
+      <nav class="site-nav">
+        <a href="#features">Features</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#tools">Tools</a>
+        <a
+          class="cta cta-ghost"
+          href="https://github.com/XavierBeheydt/mcp-kraken"
+          rel="noopener"
+          >GitHub →</a
+        >
+      </nav>
+    </header>
+
+    <main>
+      <!-- ─────────────────────────────────────────────── Hero -->
+      <section class="hero">
+        <div class="hero-eyebrow">
+          <span class="dot"></span>
+          Model Context Protocol · Kraken Spot
+        </div>
+        <h1>
+          The Kraken API.<br />
+          <span class="hero-accent">Now an MCP server.</span>
+        </h1>
+        <p class="hero-lede">
+          Talk to Kraken from any MCP client. Full Spot REST API mapped to typed
+          tools, secured with bearer-token-authenticated HTTP, ships as a hardened
+          Docker image.
+        </p>
+
+        <div class="hero-actions">
+          <a class="cta cta-primary" href="#quickstart">Get started</a>
+          <a
+            class="cta cta-ghost"
+            href="https://github.com/XavierBeheydt/mcp-kraken"
+            rel="noopener"
+            >View on GitHub →</a
+          >
+        </div>
+
+        <div class="hero-badges" aria-label="Project status badges">
+          <img
+            src="https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg?branch=main"
+            alt="test status"
+          />
+          <img
+            src="https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg"
+            alt="release status"
+          />
+          <img
+            src="https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/codeql.yml/badge.svg?branch=main"
+            alt="CodeQL status"
+          />
+          <img
+            src="https://img.shields.io/github/v/tag/XavierBeheydt/mcp-kraken?label=ghcr.io&logo=docker&color=2496ED&sort=semver"
+            alt="GHCR image version"
+          />
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── Features -->
+      <section id="features" class="features">
+        <h2>What you get</h2>
+        <div class="grid">
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">⚡</div>
+            <h3>50+ typed tools</h3>
+            <p>
+              Market data, account, trading, funding, earn and subaccounts — every
+              endpoint a separate MCP tool with full type annotations.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🛡️</div>
+            <h3>Bearer-token HTTP</h3>
+            <p>
+              Mint, list and revoke opaque tokens from the CLI. Only SHA-256
+              hashes are stored. HTTPS-ready when paired with mkcert or a reverse
+              proxy.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🔒</div>
+            <h3>Permission-aware</h3>
+            <p>
+              Probes your API key on the first call, caches the permission set,
+              and refuses unauthorised tools before they hit the wire.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🐳</div>
+            <h3>Docker-ready</h3>
+            <p>
+              Multi-stage build, non-root <code>uid 10001</code>, read-only
+              rootfs, multi-arch image on GHCR. <code>compose.yml</code> included.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🔌</div>
+            <h3>HTTP, HTTPS, stdio</h3>
+            <p>
+              Same code, three transports. Streamable HTTP for remote MCP, HTTPS
+              with locally-trusted certs, stdio for Claude Desktop and
+              <code>uvx</code>.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🧪</div>
+            <h3>Tested &amp; typed</h3>
+            <p>
+              Strict mypy, ruff lint + format, pytest with a signing reference
+              vector, CodeQL SAST, Dependabot CVE alerts on every dependency.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── Quick start -->
+      <section id="quickstart" class="quickstart">
+        <h2>Quick start</h2>
+        <p>
+          One command pulls the container, one mints a bearer token, one starts
+          the server. Point your MCP client at <code>http://localhost:8765/mcp/</code>
+          with the token in the <code>Authorization</code> header.
+        </p>
+        <pre><code><span class="comment"># 1. Pull and run the latest release</span>
+<span class="prompt">$</span> docker run -d --name mcp-kraken -p 8765:8765 \
+    -e KRAKEN_API_KEY=… -e KRAKEN_API_SECRET=… \
+    -v $(pwd)/data:/data \
+    ghcr.io/xavierbeheydt/mcp-kraken:latest
+
+<span class="comment"># 2. Mint a bearer token for your MCP client</span>
+<span class="prompt">$</span> docker exec -it mcp-kraken mcp-kraken token create claude-desktop
+
+<span class="comment"># 3. Wire your client</span>
+<span class="prompt">$</span> curl -sS http://localhost:8765/mcp/ \
+    -H "Authorization: Bearer mck_…"</code></pre>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── Tools -->
+      <section id="tools" class="tools">
+        <h2>Tools</h2>
+        <p>
+          Every Kraken endpoint is its own MCP tool, grouped by concern.
+        </p>
+
+        <div class="tool-groups">
+          <div class="tool-group">
+            <h4>Market data <span class="tag tag-public">public</span></h4>
+            <p>
+              <code>get_server_time</code>, <code>get_system_status</code>,
+              <code>get_assets</code>, <code>get_asset_pairs</code>,
+              <code>get_ticker</code>, <code>get_ohlc</code>,
+              <code>get_order_book</code>, <code>get_recent_trades</code>,
+              <code>get_recent_spreads</code>
+            </p>
+          </div>
+          <div class="tool-group">
+            <h4>Account &amp; balances <span class="tag tag-private">private</span></h4>
+            <p>
+              <code>get_account_balance</code>, <code>get_extended_balance</code>,
+              <code>get_trade_balance</code>, <code>get_trade_volume</code>,
+              <code>get_ledgers</code>, <code>query_ledgers</code>,
+              <code>get_credit_lines</code>, <code>get_api_key_info</code>,
+              <code>request_export_report</code>, <code>retrieve_export</code>
+            </p>
+          </div>
+          <div class="tool-group">
+            <h4>Trading <span class="tag tag-private">private</span></h4>
+            <p>
+              <code>get_open_orders</code>, <code>get_closed_orders</code>,
+              <code>query_orders</code>, <code>get_trade_history</code>,
+              <code>get_open_positions</code>, <code>add_order</code>,
+              <code>add_order_batch</code>, <code>amend_order</code>,
+              <code>edit_order</code>, <code>cancel_order</code>,
+              <code>cancel_all_orders</code>, <code>cancel_all_orders_after</code>
+            </p>
+          </div>
+          <div class="tool-group">
+            <h4>Funding <span class="tag tag-private">private</span></h4>
+            <p>
+              <code>get_deposit_methods</code>, <code>get_deposit_addresses</code>,
+              <code>get_deposit_status</code>,
+              <code>get_withdrawal_methods</code>, <code>withdraw</code>,
+              <code>get_withdrawal_status</code>, <code>cancel_withdrawal</code>,
+              <code>wallet_transfer</code>
+            </p>
+          </div>
+          <div class="tool-group">
+            <h4>Earn <span class="tag tag-private">private</span></h4>
+            <p>
+              <code>list_earn_strategies</code>, <code>list_earn_allocations</code>,
+              <code>allocate_earn</code>, <code>deallocate_earn</code>,
+              <code>get_earn_allocation_status</code>,
+              <code>get_earn_deallocation_status</code>
+            </p>
+          </div>
+          <div class="tool-group">
+            <h4>WebSocket auth <span class="tag tag-private">private</span></h4>
+            <p>
+              <code>get_websockets_token</code>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── Disclaimer -->
+      <section id="disclaimer" class="disclaimer">
+        <h2>Disclaimer</h2>
+        <div class="disclaimer-box">
+          <p>
+            <strong>This project is alpha software.</strong> Interfaces, tool
+            signatures, default behaviours and the on-disk token format may
+            change in any minor release until v1.0. Run a non-production
+            instance against a read-only Kraken API key first, and read every
+            tool's docstring before granting it credentials with trading or
+            withdrawal permissions.
+          </p>
+          <p>
+            <strong>No liability.</strong> The author provides this software
+            <em>as is</em>, without any warranty of any kind, express or
+            implied. The author is <strong>not responsible</strong> for any
+            direct, indirect, incidental or consequential financial loss arising
+            from the use, misuse or unavailability of this software — including
+            but not limited to misrouted withdrawals, unintended trades, missed
+            executions, exchange downtime, API rate-limit hits, or compromised
+            credentials.
+          </p>
+          <p>
+            <strong>Not financial advice.</strong> Nothing in this software,
+            the documentation, or any tool output constitutes investment,
+            trading, tax or legal advice. You are solely responsible for the
+            decisions you make and the orders you submit.
+          </p>
+          <p>
+            <strong>Not affiliated with Kraken or Payward Inc.</strong> "Kraken"
+            is a trademark of its respective owner. This project is an
+            independent client of the public Kraken REST API.
+          </p>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────────── Roadmap -->
+      <section class="roadmap">
+        <h2>On the roadmap</h2>
+        <ul>
+          <li>WebSocket v2 — public feeds, private executions, balances</li>
+          <li>FIX 4.4 trading session, sidecar deployment</li>
+          <li>Per-token Kraken credentials (multi-tenant)</li>
+          <li>Prometheus metrics, OpenTelemetry tracing</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-row">
+        <a href="https://github.com/XavierBeheydt/mcp-kraken" rel="noopener">
+          GitHub repository
+        </a>
+        <a
+          href="https://github.com/XavierBeheydt/mcp-kraken/pkgs/container/mcp-kraken"
+          rel="noopener"
+        >
+          GHCR image
+        </a>
+        <a
+          href="https://github.com/XavierBeheydt/mcp-kraken/issues"
+          rel="noopener"
+          >Issues</a
+        >
+        <a href="https://docs.kraken.com/api/" rel="noopener">Kraken API docs</a>
+        <a href="https://gofastmcp.com/" rel="noopener">FastMCP</a>
+      </div>
+      <p class="footer-fineprint">
+        Not affiliated with Kraken or Payward Inc. Trade at your own risk.
+      </p>
+    </footer>
+  </body>
+</html>
