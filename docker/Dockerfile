@@ -48,10 +48,11 @@ EXPOSE 8765
 VOLUME ["/data"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request, os, sys; \
-url = f'http://127.0.0.1:{os.environ.get(\"MCP_KRAKEN_PORT\", \"8765\")}{os.environ.get(\"MCP_KRAKEN_PATH\", \"/mcp\")}/'; \
-req = urllib.request.Request(url, method='GET'); \
-sys.exit(0 if urllib.request.urlopen(req, timeout=3).status < 500 else 1)" || exit 1
+    CMD python -c "\
+import urllib.request, os, sys; \
+port = os.environ.get('MCP_KRAKEN_PORT', '8765'); \
+urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3); \
+sys.exit(0)" || exit 1
 
 ENTRYPOINT ["mcp-kraken"]
 CMD ["serve"]

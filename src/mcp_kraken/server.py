@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
 
 from fastmcp import FastMCP
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import __version__
 from .auth import KrakenTokenVerifier, TokenStore
@@ -19,11 +19,40 @@ from .kraken import KrakenClient
 from .logging import get_logger
 from .tools import register_all
 
-if TYPE_CHECKING:
-    from starlette.applications import Starlette
-
-
 log = get_logger(__name__)
+
+_HEALTH_BODY = b'{"status":"ok"}'
+_HEALTH_HEADERS = [
+    (b"content-type", b"application/json"),
+    (b"content-length", str(len(_HEALTH_BODY)).encode()),
+]
+
+
+class _HealthMiddleware:
+    """Short-circuit ``GET /health`` before auth — no credentials required.
+
+    Any HTTP request whose path is exactly ``/health`` receives a ``200 OK``
+    with ``{"status":"ok"}`` and never reaches FastMCP's token verifier.
+    All other requests are forwarded to the inner ASGI app unchanged.
+    """
+
+    __slots__ = ("_app",)
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"] == "/health":
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": _HEALTH_HEADERS,
+                }
+            )
+            await send({"type": "http.response.body", "body": _HEALTH_BODY})
+            return
+        await self._app(scope, receive, send)
 
 
 def _make_client(settings: Settings) -> KrakenClient:
@@ -81,10 +110,15 @@ def build_server(settings: Settings) -> tuple[FastMCP, KrakenClient]:
     return mcp, client
 
 
-def build_http_app(settings: Settings) -> Starlette:
-    """Return an ASGI app for use with uvicorn / a reverse proxy."""
+def build_http_app(settings: Settings) -> ASGIApp:
+    """Return an ASGI app for use with uvicorn / a reverse proxy.
+
+    The returned app wraps the FastMCP Starlette application with
+    :class:`_HealthMiddleware`, which answers ``GET /health`` with
+    ``200 {"status":"ok"}`` before auth is checked.
+    """
     mcp, _client = build_server(settings)
-    return mcp.http_app(path=settings.path)
+    return _HealthMiddleware(mcp.http_app(path=settings.path))
 
 
 def run_http(settings: Settings) -> None:
