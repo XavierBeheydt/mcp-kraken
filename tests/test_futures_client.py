@@ -106,3 +106,61 @@ async def test_invalid_key_is_translated(futures_client: KrakenFuturesClient) ->
     _patch_sdk(futures_client, [sdk_exc.KrakenInvalidAPIKeyError("bad key")])
     with pytest.raises(KrakenAuthError):
         await futures_client.request("GET", "/derivatives/api/v3/accounts")
+
+
+# -------------------------------------------------- credentials dispatch
+
+
+def test_active_credentials_use_futures_pair_when_api_is_futures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`Settings.active_credentials()` must return the Futures pair when
+    `MCP_KRAKEN_API=futures`, regardless of whether Spot keys are set."""
+    from mcp_kraken.config import Settings
+
+    monkeypatch.setenv("KRAKEN_API_KEY", "spot-key")
+    monkeypatch.setenv("KRAKEN_API_SECRET", "spot-secret")
+    monkeypatch.setenv("KRAKEN_FUTURES_API_KEY", "futures-key")
+    monkeypatch.setenv("KRAKEN_FUTURES_API_SECRET", "futures-secret")
+    monkeypatch.setenv("MCP_KRAKEN_API", "futures")
+
+    settings = Settings()
+    key, secret = settings.active_credentials()
+    assert key is not None and key.get_secret_value() == "futures-key"
+    assert secret is not None and secret.get_secret_value() == "futures-secret"
+    assert settings.have_kraken_credentials() is True
+
+
+def test_active_credentials_use_spot_pair_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mcp_kraken.config import Settings
+
+    monkeypatch.setenv("KRAKEN_API_KEY", "spot-key")
+    monkeypatch.setenv("KRAKEN_API_SECRET", "spot-secret")
+    monkeypatch.delenv("KRAKEN_FUTURES_API_KEY", raising=False)
+    monkeypatch.delenv("KRAKEN_FUTURES_API_SECRET", raising=False)
+    monkeypatch.delenv("MCP_KRAKEN_API", raising=False)
+
+    settings = Settings()
+    key, secret = settings.active_credentials()
+    assert key is not None and key.get_secret_value() == "spot-key"
+    assert secret is not None and secret.get_secret_value() == "spot-secret"
+
+
+def test_futures_without_futures_credentials_reports_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Setting Spot keys must NOT satisfy the credential check when
+    Futures is the active API."""
+    from mcp_kraken.config import Settings
+
+    monkeypatch.setenv("KRAKEN_API_KEY", "spot-key")
+    monkeypatch.setenv("KRAKEN_API_SECRET", "spot-secret")
+    monkeypatch.delenv("KRAKEN_FUTURES_API_KEY", raising=False)
+    monkeypatch.delenv("KRAKEN_FUTURES_API_SECRET", raising=False)
+    monkeypatch.setenv("MCP_KRAKEN_API", "futures")
+
+    settings = Settings()
+    assert settings.have_kraken_credentials() is False
+    assert settings.active_credentials() == (None, None)

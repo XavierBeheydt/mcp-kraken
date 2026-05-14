@@ -163,8 +163,9 @@ class _HealthMiddleware:
 
 
 def _make_client(settings: Settings) -> KrakenClient | KrakenFuturesClient:
-    key = settings.kraken_api_key.get_secret_value() if settings.kraken_api_key else None
-    secret = settings.kraken_api_secret.get_secret_value() if settings.kraken_api_secret else None
+    key_secret, secret_secret = settings.active_credentials()
+    key = key_secret.get_secret_value() if key_secret else None
+    secret = secret_secret.get_secret_value() if secret_secret else None
     if settings.kraken_api == "futures":
         return KrakenFuturesClient(
             api_key=key,

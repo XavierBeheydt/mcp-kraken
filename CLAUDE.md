@@ -73,7 +73,11 @@ dependencies by hand. Never invent versions: let uv pick.
 | Boundary                              | Mechanism                                  |
 | ------------------------------------- | ------------------------------------------ |
 | MCP client → mcp-kraken (you control) | Opaque bearer tokens, SHA-256 hashed in DB |
-| mcp-kraken → Kraken                   | `KRAKEN_API_KEY` + HMAC-SHA512 signature   |
+| mcp-kraken → Kraken Spot              | `KRAKEN_API_KEY` + HMAC-SHA512 signature   |
+| mcp-kraken → Kraken Futures           | `KRAKEN_FUTURES_API_KEY` + Authent header  |
+
+Spot and Futures keys are issued separately and **not interchangeable** —
+each instance reads only the pair that matches its active `kraken_api`.
 
 Bearer tokens are minted by `mcp-kraken token create NAME [--expires-in 90d]`,
 printed once, then only the hash is kept. `token list` shows ids only.
