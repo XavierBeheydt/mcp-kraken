@@ -5,10 +5,12 @@ before making changes; keep it under 300 lines.
 
 ## What this project is
 
-An MCP server that wraps the **Kraken Spot REST API** and exposes it over
-HTTP with bearer-token authentication, plus a CLI for managing those bearer
-tokens. Built on FastMCP. Single process, stateless beyond a SQLite token
-store.
+An MCP server that wraps the **Kraken REST API** (Spot or Futures, chosen
+at launch via `--api {spot|futures}` / `MCP_KRAKEN_API`) and exposes it
+over HTTP with bearer-token authentication, plus a CLI for managing those
+bearer tokens. Built on FastMCP. Single process, stateless beyond a
+SQLite token store. A single instance speaks **one API at a time** — run
+two servers if you need both surfaces.
 
 WebSocket v2 and FIX are explicitly **out of scope for v1** — they live in
 [`TODO.md`](TODO.md).
@@ -21,8 +23,9 @@ WebSocket v2 and FIX are explicitly **out of scope for v1** — they live in
   git tag (`vX.Y.Z` → `X.Y.Z`). Never hand-edit a version field.
 - HTTP framework: **FastMCP** (streamable HTTP transport)
 - Kraken REST client: **[python-kraken-sdk](https://github.com/btschwertfeger/python-kraken-sdk)**
-  (`kraken.spot.SpotAsyncClient`) — owns transport (aiohttp), HMAC signing,
-  nonce handling, and primary error classification.
+  — `kraken.spot.SpotAsyncClient` for Spot, `kraken.futures.FuturesAsyncClient`
+  for Futures. Both own transport (aiohttp), request signing, nonce handling,
+  and primary error classification.
 - Validation/config: **pydantic** + **pydantic-settings**
 - CLI: **typer** + **rich**
 - Tests: **pytest** + **pytest-asyncio** (mock the SDK's `request()` method
@@ -36,9 +39,12 @@ WebSocket v2 and FIX are explicitly **out of scope for v1** — they live in
 src/mcp_kraken/
 ├── __init__.py __main__.py cli.py config.py logging.py server.py
 ├── auth/          # bearer-token store (SQLite), FastMCP TokenVerifier
-├── kraken/        # SpotAsyncClient wrapper, errors, permission map
-└── tools/         # MCP tool registrations, one module per Kraken category
-tests/             # pytest; mock SpotAsyncClient.request via AsyncMock
+├── kraken/        # SDK wrappers — client.py (Spot), futures.py (Futures),
+│                  #   errors.py, permissions.py (Spot only)
+└── tools/         # MCP tool registrations
+    ├── spot/      #   Spot tools (account, trading, funding, earn, …)
+    └── futures/   #   Futures tools (market_data, account, trading)
+tests/             # pytest; mock SDK request() via AsyncMock
 docker/            # Dockerfile (build context is repo root)
 .github/workflows/ # test.yml, dev-publish.yml, release.yml
 ```

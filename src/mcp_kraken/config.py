@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+KrakenApi = Literal["spot", "futures"]
 
 
 class Settings(BaseSettings):
@@ -29,6 +32,16 @@ class Settings(BaseSettings):
         default="https://api.kraken.com",
         alias="KRAKEN_BASE_URL",
     )
+
+    # Which Kraken product surface to expose. A single instance speaks one
+    # API at a time — run two servers if you need both.
+    kraken_api: KrakenApi = Field(default="spot", alias="MCP_KRAKEN_API")
+    # When `kraken_api="futures"`, point the SDK at the demo environment
+    # (https://demo-futures.kraken.com). Has no effect on Spot.
+    kraken_futures_sandbox: bool = Field(default=False, alias="MCP_KRAKEN_FUTURES_SANDBOX")
+    # Override the Futures base URL (empty string → SDK default, swapped
+    # automatically when `kraken_futures_sandbox=True`).
+    kraken_futures_base_url: str = Field(default="", alias="KRAKEN_FUTURES_BASE_URL")
 
     host: str = Field(default="0.0.0.0", alias="MCP_KRAKEN_HOST")  # noqa: S104
     port: int = Field(default=8765, alias="MCP_KRAKEN_PORT")
