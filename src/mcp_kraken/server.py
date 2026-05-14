@@ -6,6 +6,8 @@ Creates an HTTP-bound MCP server with bearer-token auth, holding a shared
 
 from __future__ import annotations
 
+import logging
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qsl, urlencode
@@ -21,6 +23,33 @@ from .logging import get_logger
 from .tools import register_all
 
 log = get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Access-log sanitiser
+# ---------------------------------------------------------------------------
+
+_REDACT_RE = re.compile(r"(apikey=)[^\s&\"']+")
+
+
+class _ApiKeyLogFilter(logging.Filter):
+    """Redact ``apikey=<token>`` from uvicorn access-log records.
+
+    uvicorn logs the raw request line (including query string) at the
+    protocol layer, before our ``_ApiKeyQueryMiddleware`` has had a chance
+    to strip the bearer token.  This filter scrubs the value so the token
+    never lands in stdout / log files.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.args:
+            args = record.args if isinstance(record.args, tuple) else (record.args,)
+            record.args = tuple(
+                _REDACT_RE.sub(r"\1***", a) if isinstance(a, str) else a for a in args
+            )
+        if isinstance(record.msg, str):
+            record.msg = _REDACT_RE.sub(r"\1***", record.msg)
+        return True
+
 
 _HEALTH_BODY = b'{"status":"ok"}'
 _HEALTH_HEADERS = [
@@ -212,6 +241,9 @@ def run_http(settings: Settings) -> None:
     Speaks HTTPS when both `ssl_keyfile` and `ssl_certfile` are set.
     """
     import uvicorn
+
+    # Scrub ?apikey= from uvicorn access logs before the server starts.
+    logging.getLogger("uvicorn.access").addFilter(_ApiKeyLogFilter())
 
     app = build_http_app(settings)
     use_tls = settings.ssl_keyfile is not None and settings.ssl_certfile is not None
