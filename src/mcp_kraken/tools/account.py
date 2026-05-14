@@ -7,6 +7,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from ..kraken import KrakenClient
+from ..kraken.errors import KrakenAPIError
 from ._common import csv, drop_none
 
 
@@ -18,8 +19,23 @@ def register(mcp: FastMCP, client: KrakenClient) -> None:
 
     @mcp.tool(tags={"private", "account"})
     async def get_extended_balance() -> Any:
-        """Return balance with hold/available breakdowns per asset."""
-        return await client.private("ExtendedBalance")
+        """Return balance with hold/available breakdowns per asset.
+
+        Note: ``ExtendedBalance`` is not supported on all Kraken account types
+        or regions.  If this tool returns an error, use ``get_account_balance``
+        instead (same data, without the hold/available breakdown).
+        """
+        try:
+            return await client.private("ExtendedBalance")
+        except KrakenAPIError as exc:
+            if "unknown method" in str(exc).lower():
+                raise KrakenAPIError(
+                    [
+                        "EGeneral:Unknown method — ExtendedBalance is not available "
+                        "on this account or region. Use get_account_balance instead."
+                    ]
+                ) from exc
+            raise
 
     @mcp.tool(tags={"private", "account"})
     async def get_trade_balance(asset: str = "ZUSD") -> Any:

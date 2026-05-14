@@ -30,6 +30,8 @@ locally.
   are rejected before they leave the box, with a clear error.
 - Built-in token CLI: generate, list, and revoke bearer tokens used by HTTP
   clients to authenticate against the MCP itself.
+- `GET /health` liveness probe — no credentials required; safe for Docker
+  healthchecks, Kubernetes probes, and load-balancer pings.
 - Single-process, stateless beyond the SQLite token store; ready for
   containerised deployment behind a reverse proxy.
 
@@ -85,8 +87,16 @@ uv run mcp-kraken token create "claude-desktop" --expires-in 90d
 uv run mcp-kraken serve
 ```
 
-Point your MCP client at `http://localhost:8765/mcp/` with the header
-`Authorization: Bearer mck_…`.
+Point your MCP client at `http://localhost:8765/mcp/` and authenticate with
+the bearer token. Two methods are supported:
+
+| Method | When to use |
+|--------|-------------|
+| `Authorization: Bearer mck_…` header | Preferred — token stays out of URLs and logs |
+| `?apikey=mck_…` query parameter | Fallback for clients that cannot set custom headers (e.g. Claude Desktop remote connector) |
+
+The server strips `?apikey=` from the URL before forwarding to the MCP
+layer, and redacts it from access logs (`apikey=***`).
 
 ## CLI
 
@@ -122,6 +132,12 @@ just serve-https               # serves HTTPS on 0.0.0.0:8765/mcp
 Then in Claude Desktop: **Settings → Connectors → Add custom connector**, with
 URL `https://localhost:8765/mcp/` and the bearer token from
 `mcp-kraken token create`.
+
+> **Tip — Claude Desktop cannot set custom headers.** If the connector UI
+> has no "Authorization header" field, append the token as a query param
+> instead: `https://localhost:8765/mcp/?apikey=mck_…`  
+> The server converts it to a proper `Authorization: Bearer` header
+> internally and redacts the value from its access logs.
 
 ### Option B — stdio (Command Connector)
 
@@ -263,6 +279,18 @@ The container runs as a non-root user (`uid 10001`), with a read-only root
 filesystem, no added capabilities, and a SQLite token-store volume at
 `/data`. Put it behind a TLS-terminating reverse proxy in production — the
 server speaks plain HTTP internally.
+
+### Health endpoint
+
+`GET /health` returns `200 {"status":"ok"}` without a bearer token — safe
+for orchestrators, load balancers, and uptime monitors:
+
+```bash
+curl http://localhost:8765/health
+# {"status":"ok"}
+```
+
+Both the `Dockerfile` `HEALTHCHECK` and `compose.yml` use this endpoint.
 
 ## Versioning & release flow
 
