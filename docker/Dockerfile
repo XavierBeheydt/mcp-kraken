@@ -1,9 +1,16 @@
 # syntax=docker/dockerfile:1.7
 
 # -----------------------------------------------------------------------------
-# Stage 1: build a self-contained virtualenv with uv
+# Stage 0: uv binary (decoupled from Python version)
 # -----------------------------------------------------------------------------
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:latest AS uv-bin
+
+# -----------------------------------------------------------------------------
+# Stage 1: build a self-contained virtualenv
+# -----------------------------------------------------------------------------
+FROM python:3.14-slim-bookworm AS builder
+
+COPY --from=uv-bin /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
