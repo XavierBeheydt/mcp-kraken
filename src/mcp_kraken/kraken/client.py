@@ -1,9 +1,14 @@
 """Async Kraken Spot REST client.
 
-The client is intentionally thin: it handles transport, signing, error
-translation, and permission gating, but does not model individual endpoint
-schemas. Each MCP tool calls `public()` or `private()` directly and returns
-the parsed `result` to the caller.
+A thin wrapper around `kraken.spot.SpotAsyncClient` from
+[python-kraken-sdk](https://github.com/btschwertfeger/python-kraken-sdk).
+The SDK owns transport, request signing, nonce handling, and primary error
+classification; this wrapper exposes the same `public()` / `private()`
+surface the rest of mcp-kraken is built against and translates SDK
+exceptions into our local hierarchy.
+
+Each MCP tool calls `public()` or `private()` directly and receives the
+parsed `result` payload.
 """
 
 from __future__ import annotations
@@ -11,24 +16,40 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-import httpx
+from kraken import exceptions as sdk_exc
+from kraken.spot import SpotAsyncClient
 
 from ..logging import get_logger
-from .errors import KrakenError, KrakenPermissionError, classify
+from .errors import (
+    KrakenAPIError,
+    KrakenAuthError,
+    KrakenError,
+    KrakenPermissionError,
+    KrakenRateLimitError,
+)
 from .permissions import (
     PERMISSION_REQUIREMENTS,
     KrakenPermission,
     parse_permissions,
 )
-from .signing import next_nonce, sign
 
 API_VERSION = "0"
 
 log = get_logger(__name__)
 
 
+# Endpoint name → JSON-body flag. Kraken's batch endpoints expect the request
+# body to be JSON-encoded; the SDK has a `do_json` switch for this.
+_JSON_BODY_ENDPOINTS: frozenset[str] = frozenset(
+    {
+        "AddOrderBatch",
+        "CancelOrderBatch",
+    }
+)
+
+
 class KrakenClient:
-    """Async client over `httpx.AsyncClient`.
+    """Async Kraken client backed by `kraken.spot.SpotAsyncClient`.
 
     Designed to be created once and reused for the lifetime of the server.
     Use as an async context manager, or call `aclose()` explicitly.
@@ -41,22 +62,49 @@ class KrakenClient:
         api_secret: str | None = None,
         base_url: str = "https://api.kraken.com",
         timeout: float = 30.0,
-        user_agent: str = "mcp-kraken/0",
+        user_agent: str | None = None,
     ) -> None:
         self._api_key = api_key
         self._api_secret = api_secret
-        self._client = httpx.AsyncClient(
-            base_url=base_url.rstrip("/"),
-            timeout=timeout,
-            headers={"User-Agent": user_agent},
-        )
+        self._base_url = base_url.rstrip("/")
+        self._timeout = int(timeout) or 1
+        self._user_agent = user_agent
+        # The SDK builds an aiohttp.ClientSession in its constructor, which
+        # requires a running event loop. We instantiate it lazily on the
+        # first call so KrakenClient can still be constructed outside one
+        # (e.g. during server wiring).
+        self._sdk: SpotAsyncClient | None = None
+        self._sdk_lock = asyncio.Lock()
         self._permissions: frozenset[KrakenPermission] | None = None
         self._permissions_lock = asyncio.Lock()
+
+    async def _get_sdk(self) -> SpotAsyncClient:
+        if self._sdk is not None:
+            return self._sdk
+        async with self._sdk_lock:
+            if self._sdk is not None:
+                return self._sdk  # type: ignore[unreachable]
+            sdk = SpotAsyncClient(
+                key=self._api_key or "",
+                secret=self._api_secret or "",
+                url=self._base_url,
+            )
+            if self._user_agent:
+                # Override the session's User-Agent so request logs identify
+                # mcp-kraken rather than the upstream SDK.
+                try:
+                    sdk._SpotAsyncClient__session.headers["User-Agent"] = self._user_agent  # type: ignore[attr-defined]
+                except (AttributeError, KeyError):
+                    log.debug("could not set custom User-Agent on SDK session", exc_info=True)
+            self._sdk = sdk
+            return self._sdk
 
     # ------------------------------------------------------------------ infra
 
     async def aclose(self) -> None:
-        await self._client.aclose()
+        if self._sdk is not None:
+            await self._sdk.close()
+            self._sdk = None
 
     async def __aenter__(self) -> KrakenClient:
         return self
@@ -72,10 +120,15 @@ class KrakenClient:
 
     async def public(self, endpoint: str, params: dict[str, Any] | None = None) -> Any:
         """Call an unauthenticated endpoint under `/0/public/`."""
-        path = f"/{API_VERSION}/public/{endpoint}"
-        log.debug("kraken public %s params=%s", path, params)
-        resp = await self._client.get(path, params=params or {})
-        return self._unwrap(resp, endpoint=endpoint)
+        uri = f"/{API_VERSION}/public/{endpoint}"
+        log.debug("kraken public %s params=%s", uri, params)
+        return await self._call(
+            method="GET",
+            uri=uri,
+            params=params,
+            auth=False,
+            endpoint=endpoint,
+        )
 
     # ----------------------------------------------------------------- private
 
@@ -97,22 +150,59 @@ class KrakenClient:
                 "Kraken API credentials are not configured "
                 "(set KRAKEN_API_KEY and KRAKEN_API_SECRET)"
             )
-        assert self._api_key and self._api_secret  # noqa: S101 — type narrowing
 
         if not skip_permission_check:
             await self._enforce_permissions(endpoint)
 
-        path = f"/{API_VERSION}/private/{endpoint}"
-        body = dict(data or {})
-        body["nonce"] = next_nonce()
-        headers = {
-            "API-Key": self._api_key,
-            "API-Sign": sign(path, body, self._api_secret),
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        log.debug("kraken private %s keys=%s", path, sorted(body.keys()))
-        resp = await self._client.post(path, data=body, headers=headers)
-        return self._unwrap(resp, endpoint=endpoint)
+        uri = f"/{API_VERSION}/private/{endpoint}"
+        log.debug(
+            "kraken private %s keys=%s",
+            uri,
+            sorted((data or {}).keys()),
+        )
+        return await self._call(
+            method="POST",
+            uri=uri,
+            params=data,
+            auth=True,
+            endpoint=endpoint,
+            do_json=endpoint in _JSON_BODY_ENDPOINTS,
+        )
+
+    # ------------------------------------------------------------- transport
+
+    async def _call(
+        self,
+        *,
+        method: str,
+        uri: str,
+        params: dict[str, Any] | None,
+        auth: bool,
+        endpoint: str,
+        do_json: bool = False,
+    ) -> Any:
+        sdk = await self._get_sdk()
+        try:
+            result = await sdk.request(
+                method=method,
+                uri=uri,
+                params=dict(params) if params else None,
+                timeout=self._timeout,
+                auth=auth,
+                do_json=do_json,
+            )
+        except Exception as exc:
+            raise self._translate(exc, endpoint=endpoint) from exc
+
+        # The SDK's `check()` returns `data["result"]` on success but falls
+        # back to returning the full `{error: [...], result: ...}` envelope
+        # when the error code is not in its known table. Catch that case
+        # here so callers always see a typed exception on failure.
+        if isinstance(result, dict):
+            errors = result.get("error")
+            if errors:
+                raise KrakenAPIError(list(errors))
+        return result
 
     # -------------------------------------------------------------- perms
 
@@ -126,13 +216,17 @@ class KrakenClient:
             try:
                 info = await self.private("GetAPIKeyInfo", skip_permission_check=True)
             except KrakenError as exc:
-                # GetAPIKeyInfo is a newer endpoint; on older keys it may not
-                # be enabled. Fall back to "unknown" so we let Kraken enforce.
+                # GetAPIKeyInfo is a newer endpoint; on older keys or in some
+                # regions Kraken answers with "Unknown method". Fall back to
+                # "unknown" so we let Kraken itself enforce permissions.
                 log.warning("could not introspect API key permissions: %s", exc)
                 self._permissions = frozenset()
                 return self._permissions
             self._permissions = parse_permissions(info if isinstance(info, dict) else {})
-            log.info("API key permissions: %s", sorted(p.value for p in self._permissions))
+            log.info(
+                "API key permissions: %s",
+                sorted(p.value for p in self._permissions),
+            )
             return self._permissions
 
     async def _enforce_permissions(self, endpoint: str) -> None:
@@ -141,7 +235,7 @@ class KrakenClient:
             return
         held = await self.get_permissions()
         if not held:
-            # We could not introspect — let Kraken decide.
+            # We could not introspect — let Kraken decide over the wire.
             return
         missing = required - held
         if missing:
@@ -154,18 +248,41 @@ class KrakenClient:
                 endpoint=endpoint,
             )
 
-    # -------------------------------------------------------------- response
+    # --------------------------------------------------------- error mapping
 
     @staticmethod
-    def _unwrap(resp: httpx.Response, *, endpoint: str) -> Any:
-        try:
-            payload = resp.json()
-        except ValueError as exc:
-            resp.raise_for_status()
-            raise KrakenError(f"non-JSON response from Kraken ({resp.status_code})") from exc
-        if resp.status_code >= 500:
-            raise KrakenError(f"Kraken server error {resp.status_code}: {payload}")
-        errors = payload.get("error") or []
-        if errors:
-            raise classify(errors, endpoint=endpoint)
-        return payload.get("result")
+    def _translate(exc: BaseException, *, endpoint: str) -> KrakenError:
+        """Map SDK / transport exceptions onto our local hierarchy."""
+        if isinstance(exc, KrakenError):
+            return exc
+
+        msg = str(exc) or exc.__class__.__name__
+        errors = [msg]
+
+        if isinstance(exc, sdk_exc.KrakenPermissionDeniedError):
+            return KrakenPermissionError(errors, endpoint=endpoint)
+        if isinstance(
+            exc,
+            (
+                sdk_exc.KrakenInvalidAPIKeyError,
+                sdk_exc.KrakenInvalidSignatureError,
+                sdk_exc.KrakenInvalidNonceError,
+                sdk_exc.KrakenAuthenticationError,
+                sdk_exc.KrakenAuthenticationFailedError,
+            ),
+        ):
+            return KrakenAuthError(errors)
+        if isinstance(
+            exc,
+            (sdk_exc.KrakenRateLimitExceededError, sdk_exc.KrakenApiLimitExceededError),
+        ):
+            return KrakenRateLimitError(errors)
+
+        # Any other SDK-defined Kraken exception → generic API error so
+        # callers can `except KrakenAPIError` and get useful messages.
+        if exc.__class__.__module__.startswith("kraken.exceptions"):
+            return KrakenAPIError(errors)
+
+        # Transport / unexpected — wrap as KrakenError, preserve original
+        # via __cause__.
+        return KrakenError(msg)

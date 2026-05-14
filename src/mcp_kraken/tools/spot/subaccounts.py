@@ -6,7 +6,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from ..kraken import KrakenClient
+from ...kraken import KrakenClient
 
 
 def register(mcp: FastMCP, client: KrakenClient) -> None:

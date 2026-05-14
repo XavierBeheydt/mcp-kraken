@@ -53,6 +53,23 @@ def serve(
     host: Annotated[str | None, typer.Option(help="Bind address.")] = None,
     port: Annotated[int | None, typer.Option(help="TCP port.")] = None,
     path: Annotated[str | None, typer.Option(help="MCP HTTP path.")] = None,
+    api: Annotated[
+        str | None,
+        typer.Option(
+            "--api",
+            help=(
+                "Which Kraken product to expose: `spot` (default) or `futures`. "
+                "A single server speaks one API at a time."
+            ),
+        ),
+    ] = None,
+    futures_sandbox: Annotated[
+        bool,
+        typer.Option(
+            "--futures-sandbox",
+            help="When --api=futures, talk to demo-futures.kraken.com instead of production.",
+        ),
+    ] = False,
     ssl_keyfile: Annotated[
         Path | None,
         typer.Option(
@@ -90,6 +107,12 @@ def serve(
         settings.port = port
     if path is not None:
         settings.path = path
+    if api is not None:
+        if api not in ("spot", "futures"):
+            raise typer.BadParameter("--api must be 'spot' or 'futures'")
+        settings.kraken_api = api  # type: ignore[assignment]
+    if futures_sandbox:
+        settings.kraken_futures_sandbox = True
     if ssl_keyfile is not None:
         settings.ssl_keyfile = ssl_keyfile
     if ssl_certfile is not None:

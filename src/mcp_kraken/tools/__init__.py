@@ -1,35 +1,35 @@
-"""MCP tools mapping the Kraken Spot REST API.
+"""MCP tools mapping the Kraken REST APIs.
 
-Each module groups one functional area (market data, account, trading, etc.).
-`register_all` attaches every tool to the supplied `FastMCP` instance.
+The MCP server speaks **one Kraken API at a time** — Spot by default,
+Futures when `MCP_KRAKEN_API=futures` (or `--api futures` on the CLI).
+`register_all` dispatches to the right sub-package.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from . import (
-    account,
-    earn,
-    funding,
-    market_data,
-    subaccounts,
-    trading,
-    websocket_auth,
-)
-
 if TYPE_CHECKING:
     from fastmcp import FastMCP
 
-    from ..kraken import KrakenClient
+    from ..config import KrakenApi
+    from ..kraken import KrakenClient, KrakenFuturesClient
 
 
-def register_all(mcp: FastMCP, client: KrakenClient) -> None:
-    """Register every Kraken-backed tool on the given FastMCP server."""
-    market_data.register(mcp, client)
-    account.register(mcp, client)
-    trading.register(mcp, client)
-    funding.register(mcp, client)
-    earn.register(mcp, client)
-    subaccounts.register(mcp, client)
-    websocket_auth.register(mcp, client)
+def register_all(
+    mcp: FastMCP,
+    client: KrakenClient | KrakenFuturesClient,
+    *,
+    api: KrakenApi,
+) -> None:
+    """Register every tool for the active Kraken API on `mcp`."""
+    if api == "spot":
+        from . import spot
+
+        spot.register(mcp, client)  # type: ignore[arg-type]
+    elif api == "futures":
+        from . import futures
+
+        futures.register(mcp, client)  # type: ignore[arg-type]
+    else:  # pragma: no cover — enum guarded upstream
+        raise ValueError(f"unknown Kraken API: {api!r}")

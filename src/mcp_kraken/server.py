@@ -18,7 +18,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from . import __version__
 from .auth import KrakenTokenVerifier, TokenStore
 from .config import Settings
-from .kraken import KrakenClient
+from .kraken import KrakenClient, KrakenFuturesClient
 from .logging import get_logger
 from .tools import register_all
 
@@ -162,19 +162,28 @@ class _HealthMiddleware:
         await self._app(scope, receive, send)
 
 
-def _make_client(settings: Settings) -> KrakenClient:
+def _make_client(settings: Settings) -> KrakenClient | KrakenFuturesClient:
+    key_secret, secret_secret = settings.active_credentials()
+    key = key_secret.get_secret_value() if key_secret else None
+    secret = secret_secret.get_secret_value() if secret_secret else None
+    if settings.kraken_api == "futures":
+        return KrakenFuturesClient(
+            api_key=key,
+            api_secret=secret,
+            base_url=settings.kraken_futures_base_url,
+            sandbox=settings.kraken_futures_sandbox,
+            timeout=settings.http_timeout,
+        )
     return KrakenClient(
-        api_key=(settings.kraken_api_key.get_secret_value() if settings.kraken_api_key else None),
-        api_secret=(
-            settings.kraken_api_secret.get_secret_value() if settings.kraken_api_secret else None
-        ),
+        api_key=key,
+        api_secret=secret,
         base_url=settings.kraken_base_url,
         timeout=settings.http_timeout,
         user_agent=f"mcp-kraken/{__version__}",
     )
 
 
-def build_server(settings: Settings) -> tuple[FastMCP, KrakenClient]:
+def build_server(settings: Settings) -> tuple[FastMCP, KrakenClient | KrakenFuturesClient]:
     """Wire up a FastMCP instance with auth + Kraken-backed tools.
 
     Returns the server and the underlying Kraken client (so callers can
@@ -195,25 +204,28 @@ def build_server(settings: Settings) -> tuple[FastMCP, KrakenClient]:
 
     @asynccontextmanager
     async def _lifespan(_mcp: FastMCP) -> AsyncIterator[None]:
-        log.info("mcp-kraken %s starting", __version__)
+        log.info("mcp-kraken %s starting (api=%s)", __version__, settings.kraken_api)
         try:
             yield
         finally:
             log.info("mcp-kraken shutting down")
             await client.aclose()
 
+    api_label = "Spot" if settings.kraken_api == "spot" else "Futures"
     mcp = FastMCP(
-        name="kraken",
+        name=f"kraken-{settings.kraken_api}",
         instructions=(
-            "MCP server for the Kraken cryptocurrency exchange. "
+            f"MCP server for the Kraken {api_label} REST API. "
             "Public market-data tools work without an API key. "
-            "Private tools (account, trading, funding, earn) require "
-            "KRAKEN_API_KEY and KRAKEN_API_SECRET to be configured server-side."
+            "Private tools require KRAKEN_API_KEY and KRAKEN_API_SECRET to "
+            "be configured server-side. Set MCP_KRAKEN_API=spot|futures "
+            "(or --api on the CLI) to choose which product surface this "
+            "instance exposes."
         ),
         auth=auth,
         lifespan=_lifespan,
     )
-    register_all(mcp, client)
+    register_all(mcp, client, api=settings.kraken_api)
     return mcp, client
 
 
@@ -249,12 +261,13 @@ def run_http(settings: Settings) -> None:
     use_tls = settings.ssl_keyfile is not None and settings.ssl_certfile is not None
     scheme = "https" if use_tls else "http"
     log.info(
-        "serving on %s://%s:%d%s (auth=%s)",
+        "serving on %s://%s:%d%s (auth=%s, api=%s)",
         scheme,
         settings.host,
         settings.port,
         settings.path,
         "off" if settings.auth_disabled else "on",
+        settings.kraken_api,
     )
     uvicorn.run(
         app,

@@ -89,3 +89,31 @@ async def test_kraken_client_csv_omits_empty_list() -> None:
 async def test_client_unused_in_schema_test(kraken_client: KrakenClient) -> None:
     """Sanity: the kraken_client fixture is still usable elsewhere."""
     assert kraken_client.has_credentials
+
+
+async def test_futures_tools_registered(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """When MCP_KRAKEN_API=futures, only Futures tools are exposed and they
+    are prefixed with `futures_`."""
+    from mcp_kraken.config import Settings
+
+    monkeypatch.setenv("KRAKEN_API_KEY", "test")
+    monkeypatch.setenv("KRAKEN_API_SECRET", "dGVzdHNlY3JldA==")
+    monkeypatch.setenv("MCP_KRAKEN_TOKEN_DB", str(tmp_path / "tokens.db"))
+    monkeypatch.setenv("MCP_KRAKEN_AUTH_DISABLED", "true")
+    monkeypatch.setenv("MCP_KRAKEN_API", "futures")
+
+    schemas = await _gather_tool_schemas(Settings())
+    names = set(schemas)
+
+    # A handful of Futures tools must be present.
+    for expected in {
+        "futures_get_tickers",
+        "futures_get_wallets",
+        "futures_create_order",
+        "futures_cancel_order",
+    }:
+        assert expected in names, f"{expected!r} not registered"
+
+    # And no Spot tool should leak in.
+    assert "get_account_balance" not in names
+    assert "add_order" not in names

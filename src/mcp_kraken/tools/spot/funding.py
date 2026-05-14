@@ -6,8 +6,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from ..kraken import KrakenClient
-from ._common import drop_none
+from ...kraken import KrakenClient
+from .._common import drop_none
 
 
 def register(mcp: FastMCP, client: KrakenClient) -> None:
