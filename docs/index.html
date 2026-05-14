@@ -141,8 +141,9 @@
             <h3>Bearer-token HTTP</h3>
             <p>
               Mint, list and revoke opaque tokens from the CLI. Only SHA-256
-              hashes are stored. HTTPS-ready when paired with mkcert or a reverse
-              proxy.
+              hashes are stored. Send the token via <code>Authorization: Bearer</code>
+              header or <code>?apikey=</code> query param for clients that
+              can't set custom headers (e.g. Claude Desktop).
             </p>
           </article>
           <article class="card">
@@ -159,6 +160,16 @@
             <p>
               Multi-stage build, non-root <code>uid 10001</code>, read-only
               rootfs, multi-arch image on GHCR. <code>compose.yml</code> included.
+              Built and tested on Python 3.14.
+            </p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">❤️</div>
+            <h3>Health endpoint</h3>
+            <p>
+              <code>GET /health</code> returns <code>{"status":"ok"}</code>
+              with no bearer token. Safe for Docker healthchecks, Kubernetes
+              probes, and load-balancer pings.
             </p>
           </article>
           <article class="card">
@@ -186,9 +197,12 @@
         <h2>Quick start</h2>
         <p>
           One command pulls the container, one mints a bearer token, one starts
-          the server. Point your MCP client at <code>http://localhost:8765/mcp/</code>
-          with the token in the <code>Authorization</code> header.
+          the server. Two ways to authenticate your MCP client:
         </p>
+        <ul style="margin: 0 0 1.25rem; padding-left: 1.5rem; color: var(--text-muted); font-size: 0.95rem; line-height: 1.7;">
+          <li><code>Authorization: Bearer mck_…</code> header — preferred, token never touches the URL</li>
+          <li><code>http://localhost:8765/mcp/?apikey=mck_…</code> — query param fallback for clients that can't set headers (Claude Desktop)</li>
+        </ul>
         <pre><code><span class="comment"># 1. Pull and run the latest release</span>
 <span class="prompt">$</span> docker run -d --name mcp-kraken -p 8765:8765 \
     -e KRAKEN_API_KEY=… -e KRAKEN_API_SECRET=… \
@@ -198,7 +212,11 @@
 <span class="comment"># 2. Mint a bearer token for your MCP client</span>
 <span class="prompt">$</span> docker exec -it mcp-kraken mcp-kraken token create claude-desktop
 
-<span class="comment"># 3. Wire your client</span>
+<span class="comment"># 3. Verify the server is up (no token needed)</span>
+<span class="prompt">$</span> curl -sS http://localhost:8765/health
+<span class="comment"># {"status":"ok"}</span>
+
+<span class="comment"># 4. Wire your MCP client</span>
 <span class="prompt">$</span> curl -sS http://localhost:8765/mcp/ \
     -H "Authorization: Bearer mck_…"</code></pre>
       </section>
