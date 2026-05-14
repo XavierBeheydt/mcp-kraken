@@ -130,3 +130,7 @@ References:
 - [ ] Optional cache layer for public market-data endpoints
 - [ ] Built-in pagination iterators for `ClosedOrders`, `TradeHistory`, `Ledgers`
 - [ ] Replay tool: re-issue a previous order from an execution report
+
+## Documentation
+
+- [ ] Move Github Page in `docs/page` or `page` folder path
