@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from urllib.parse import parse_qsl, urlencode
 
 from fastmcp import FastMCP
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -26,6 +27,83 @@ _HEALTH_HEADERS = [
     (b"content-type", b"application/json"),
     (b"content-length", str(len(_HEALTH_BODY)).encode()),
 ]
+
+
+class _ApiKeyQueryMiddleware:
+    """Lift ``?apikey=...`` query param into a Bearer ``Authorization`` header.
+
+    Some MCP clients — notably the current Claude Desktop remote-MCP
+    config — cannot send custom HTTP headers. This middleware accepts
+    the bearer as a URL query parameter (the convention used by Alpha
+    Vantage and several other public MCP servers) and rewrites the
+    request so it looks like it came in with ``Authorization: Bearer
+    <token>``.
+
+    The ``apikey`` parameter is stripped from the query string before
+    the inner app sees it, so FastMCP and the token verifier never see
+    the secret in the URL. Note: uvicorn's default access log runs
+    *before* this middleware in the protocol layer, so the raw request
+    line may still appear in stdout. Operators who care about that
+    should configure uvicorn's access log format or place a reverse
+    proxy in front that scrubs the param.
+
+    If an ``Authorization`` header is already present, the query
+    parameter is ignored (the header wins) and the URL is left
+    unchanged.
+    """
+
+    __slots__ = ("_app",)
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        query: bytes = scope.get("query_string", b"") or b""
+        if b"apikey" not in query:
+            await self._app(scope, receive, send)
+            return
+
+        headers: list[tuple[bytes, bytes]] = list(scope.get("headers", []) or [])
+        if any(name.lower() == b"authorization" for name, _ in headers):
+            await self._app(scope, receive, send)
+            return
+
+        token, stripped_query = _extract_apikey(query)
+        if token is None:
+            await self._app(scope, receive, send)
+            return
+
+        new_scope = dict(scope)
+        new_scope["query_string"] = stripped_query
+        new_scope["headers"] = [
+            *headers,
+            (b"authorization", b"Bearer " + token.encode("latin-1", errors="replace")),
+        ]
+        await self._app(new_scope, receive, send)
+
+
+def _extract_apikey(query: bytes) -> tuple[str | None, bytes]:
+    """Pull the first ``apikey`` value out of a raw query string.
+
+    Returns ``(token, stripped_query)``. When the parameter is absent
+    or has an empty value, returns ``(None, original_query)`` so the
+    caller can short-circuit without rebuilding the URL.
+    """
+    pairs = parse_qsl(query.decode("latin-1"), keep_blank_values=True)
+    token: str | None = None
+    remaining: list[tuple[str, str]] = []
+    for key, value in pairs:
+        if key == "apikey" and token is None and value:
+            token = value
+            continue
+        remaining.append((key, value))
+    if token is None:
+        return None, query
+    return token, urlencode(remaining).encode("latin-1")
 
 
 class _HealthMiddleware:
@@ -113,12 +191,19 @@ def build_server(settings: Settings) -> tuple[FastMCP, KrakenClient]:
 def build_http_app(settings: Settings) -> ASGIApp:
     """Return an ASGI app for use with uvicorn / a reverse proxy.
 
-    The returned app wraps the FastMCP Starlette application with
-    :class:`_HealthMiddleware`, which answers ``GET /health`` with
-    ``200 {"status":"ok"}`` before auth is checked.
+    The returned app wraps the FastMCP Starlette application with two
+    layers, applied outermost-first:
+
+    * :class:`_HealthMiddleware` — answers ``GET /health`` with
+      ``200 {"status":"ok"}`` before auth is checked.
+    * :class:`_ApiKeyQueryMiddleware` — translates ``?apikey=<token>``
+      into an ``Authorization: Bearer <token>`` header, so MCP clients
+      that can't set custom headers (e.g. current Claude Desktop) can
+      still authenticate by URL.
     """
     mcp, _client = build_server(settings)
-    return _HealthMiddleware(mcp.http_app(path=settings.path))
+    inner = _ApiKeyQueryMiddleware(mcp.http_app(path=settings.path))
+    return _HealthMiddleware(inner)
 
 
 def run_http(settings: Settings) -> None:
