@@ -1,7 +1,8 @@
 """Exception hierarchy for Kraken interactions.
 
-Kraken reports application-level errors in the `error` field of every response
-body, even on HTTP 200. We translate those into typed exceptions.
+The python-kraken-sdk classifies most Kraken errors into its own exception
+types. `KrakenClient` translates those into the hierarchy below so the rest
+of the codebase can rely on a small, stable set of error classes.
 """
 
 from __future__ import annotations
@@ -45,15 +46,3 @@ class KrakenPermissionError(KrakenAPIError):
 
 class KrakenRateLimitError(KrakenAPIError):
     """Per-account or per-endpoint rate limit exceeded."""
-
-
-def classify(errors: list[str], *, endpoint: str | None = None) -> KrakenAPIError:
-    """Pick the most specific exception class for a Kraken error list."""
-    joined = " ".join(errors).lower()
-    if "permission denied" in joined or "invalid permissions" in joined:
-        return KrakenPermissionError(errors, endpoint=endpoint)
-    if "invalid key" in joined or "invalid signature" in joined or "invalid nonce" in joined:
-        return KrakenAuthError(errors)
-    if "rate limit" in joined or "too many requests" in joined:
-        return KrakenRateLimitError(errors)
-    return KrakenAPIError(errors)
