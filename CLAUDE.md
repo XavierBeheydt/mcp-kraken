@@ -44,7 +44,7 @@ src/mcp_kraken/
 └── tools/         # MCP tool registrations, one module per Kraken category
 tests/             # pytest; uses respx to mock httpx
 docker/            # Dockerfile + compose.yml (build context is repo root)
-.github/workflows/ # test.yml, dev-publish.yml, release.yml, pages.yml, codeql.yml
+.github/workflows/ # test.yml, develop-publish.yml, release.yml, pages.yml, codeql.yml
 ```
 
 Source files live at `src/mcp_kraken/` (src layout). Docker files in `docker/`.
@@ -112,10 +112,13 @@ Kraken itself enforce permissions over the wire. That fallback is in
 
 - No version number lives in source. `pyproject.toml` declares
   `dynamic = ["version"]`; the build hook reads it from git tags.
-- Topic branches → PR into `dev`.
-- Every push to `dev` triggers the `dev-publish` workflow → image
-  `ghcr.io/xavierbeheydt/mcp-kraken:dev` (+ `:dev-<sha>`).
-- Tagging a commit on `dev` as `vX.Y.Z` triggers the `release` workflow:
+- The repository follows [GitFlow](docs/contributing/branching.md):
+  `feature/*` → PR into `develop`; `release/*` and `hotfix/*` → PR into
+  `main`; tag `vX.Y.Z` on the merge commit in `main` triggers the
+  release workflow.
+- Every push to `develop` triggers the `develop-publish` workflow →
+  image `ghcr.io/xavierbeheydt/mcp-kraken:develop` (+ `:develop-<sha>`).
+- Tagging a commit on `main` as `vX.Y.Z` triggers the `release` workflow:
   runs the test workflow, builds + pushes semver-tagged images
   (`:X.Y.Z`, `:X.Y`, `:X`, plus `:latest` for non-prereleases), publishes a
   GitHub Release with auto-generated notes, and fast-forwards `main` to the

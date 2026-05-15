@@ -163,8 +163,10 @@ References:
 
 ## Release & community
 
-- [ ] **GitFlow migration**: rename `dev` → `develop`, add `release/*`
-      and `hotfix/*` branches, document GitHub Rulesets — PR-2.
+- [x] **GitFlow migration**: `dev` → `develop` renamed on GitHub
+      (2026-05-15); workflows + README + CLAUDE.md updated and rulesets
+      defined under `docs/contributing/rulesets/` in PR-2. Rulesets are
+      applied via `docs/contributing/rulesets/apply.sh`.
 - [ ] **Docker Hub** mirror registry
       (`docker.io/xavierbeheydt/mcp-kraken`) alongside GHCR — PR-8.
 - [ ] **Path-filtered CI**: run code workflows only on `src/**` /

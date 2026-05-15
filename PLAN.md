@@ -231,7 +231,7 @@ Tests mirror `src/` so each module has a dedicated test directory.
 | PR    | Scope |
 | ----- | ----- |
 | PR-1  | This plan + AGENTS.md rename + versioning rule + `compose.yml` moved to `docker/` + **AGPL-3.0** license adoption. No runtime source changes. |
-| PR-2  | Branch rename `dev` → `develop`; GitHub Rulesets; workflow refs; README badges; license decision applied. |
+| PR-2  | Branch rename `dev` → `develop` (done on GitHub); workflow refs (`develop-publish.yml`, `test.yml`, `codeql.yml`); README badges + ASCII diagram; CLAUDE.md branching section; GitHub Rulesets under `docs/contributing/rulesets/` + apply script + `docs/contributing/branching.md`. |
 | PR-3  | Migrate Spot to `python-kraken-sdk`; rename `kraken/` → `exchange/spot/`; tests mirror `src/`. |
 | PR-4  | Quota middleware (opt-in); Docker secret (`*_FILE`) env support. |
 | PR-5  | `dry_run` parameter on Spot order tools + tests. |

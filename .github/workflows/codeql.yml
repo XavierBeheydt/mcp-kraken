@@ -2,9 +2,9 @@ name: codeql
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, develop]
   pull_request:
-    branches: [main, dev]
+    branches: [main, develop]
   schedule:
     # Weekly drift scan — runs even when nothing else triggers CodeQL.
     # Wed 04:33 UTC keeps it out of peak hours.

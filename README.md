@@ -3,7 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
 [![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
-[![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
+[![develop image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/develop-publish.yml/badge.svg?branch=develop)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/develop-publish.yml)
 [![CodeQL](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/security/code-scanning)
 [![pages](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/pages.yml/badge.svg?branch=main)](https://xavierbeheydt.github.io/mcp-kraken/)
 [![GHCR](https://img.shields.io/github/v/tag/XavierBeheydt/mcp-kraken?label=ghcr.io&logo=docker&color=2496ED&sort=semver)](https://github.com/XavierBeheydt/mcp-kraken/pkgs/container/mcp-kraken)
@@ -265,8 +265,8 @@ The published image is `ghcr.io/xavierbeheydt/mcp-kraken`:
 | ------------------------ | --------------------- | ------------------------------ |
 | `latest`                 | release workflow      | Latest non-prerelease tag.     |
 | `vX.Y.Z`, `vX.Y`, `vX`   | release workflow      | Semver tags on every release.  |
-| `dev`                    | dev-publish workflow  | Tip of the `dev` branch.       |
-| `dev-<sha7>`             | dev-publish workflow  | Per-commit tag on `dev`.       |
+| `develop`                | develop-publish workflow | Tip of the `develop` branch.   |
+| `develop-<sha7>`         | develop-publish workflow | Per-commit tag on `develop`.   |
 
 The reference deployment uses [`docker/compose.yml`](docker/compose.yml).
 Run it from the repository root:
@@ -302,26 +302,32 @@ Versions are derived from git tags via
 to bump in `pyproject.toml`.
 
 ```
-        feature → PR → dev   →  dev-publish workflow → ghcr.io/…:dev[-sha]
-                                                      ↑
-                                                test workflow
+feature/* → PR → develop  →  develop-publish workflow → ghcr.io/…:develop[-sha]
+                                                        ↑
+                                                  test workflow
 
-                  tag v1.2.3  →  release workflow    → ghcr.io/…:1.2.3, :latest
-                                                      + GitHub Release
-                                                      + fast-forward main to the tag
+      tag v1.2.3 on main →  release workflow → ghcr.io/…:1.2.3, :latest
+                                              + PyPI publish
+                                              + GitHub Release (auto notes)
+                                              + fast-forward main to the tag
 ```
 
-Branch conventions:
+Branch conventions follow [GitFlow](docs/contributing/branching.md):
 
 - `main` — protected; always equals the latest released commit.
-- `dev` — default integration branch; every push runs tests and republishes
-  the `:dev` image.
-- topic branches → PR into `dev`.
-- Releases are cut by tagging the desired `dev` commit `vX.Y.Z`. The release
-  workflow tests it, builds and pushes the image with semver tags, opens a
-  GitHub Release with auto-generated notes, and fast-forwards `main` to the
-  tag. If `main` cannot be fast-forwarded (e.g. `main` has diverged) the
-  workflow emits a warning and leaves the merge for a human.
+- `develop` — default integration branch on GitHub; every push runs
+  tests and republishes the `:develop` image.
+- `feature/*` topic branches → PR into `develop`.
+- `release/*` short-lived stabilisation branches → PR into `main`,
+  tagged on merge, back-merged to `develop`.
+- `hotfix/*` emergency branches off `main` → PR into `main` +
+  back-merge to `develop`.
+- Releases are cut by tagging the merge commit on `main` as `vX.Y.Z`.
+  The release workflow tests it, builds and pushes the image with
+  semver tags, opens a GitHub Release with auto-generated notes, and
+  fast-forwards `main` to the tag. If `main` cannot be fast-forwarded
+  (e.g. `main` has diverged) the workflow emits a warning and leaves
+  the merge for a human.
 
 To prerelease, tag `v1.2.3-rc1`: the workflow builds and pushes
 `1.2.3-rc1`, `1.2-rc1`, `1-rc1`, marks the GitHub Release as prerelease, and
