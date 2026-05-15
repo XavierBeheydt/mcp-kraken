@@ -1,6 +1,8 @@
 # Project guidance — mcp-kraken
 
-This file is the canonical project brief for Claude (and humans). Read it
+This file is the canonical project brief for Claude (and humans). It is
+mirrored at [AGENTS.md](AGENTS.md) (a symlink, so non-Claude coding agents
+that follow the `agents.md` convention find the same guidance). Read it
 before making changes; keep it under 300 lines.
 
 ## What this project is
@@ -12,6 +14,11 @@ store.
 
 WebSocket v2 and FIX are explicitly **out of scope for v1** — they live in
 [`TODO.md`](TODO.md).
+
+> **Active reorientation.** The project is moving to a `python-kraken-sdk`
+> backend with Spot + Futures REST coverage, a Futures demo mode, opt-in
+> per-token quotas, and a GitFlow release process. The current scope is
+> tracked in [`PLAN.md`](PLAN.md).
 
 ## Stack
 
@@ -36,8 +43,8 @@ src/mcp_kraken/
 ├── kraken/        # async REST client, HMAC signing, errors, permission map
 └── tools/         # MCP tool registrations, one module per Kraken category
 tests/             # pytest; uses respx to mock httpx
-docker/            # Dockerfile (build context is repo root)
-.github/workflows/ # test.yml, dev-publish.yml, release.yml
+docker/            # Dockerfile + compose.yml (build context is repo root)
+.github/workflows/ # test.yml, dev-publish.yml, release.yml, pages.yml, codeql.yml
 ```
 
 Source files live at `src/mcp_kraken/` (src layout). Docker files in `docker/`.
@@ -56,8 +63,23 @@ just cert-local    # mkcert: generates locally-trusted TLS certs
 just docker-build  # local image build (tagged :dev)
 ```
 
-Use `uv add <pkg>` / `uv add --dev <pkg>` — never edit `pyproject.toml`
-dependencies by hand. Never invent versions: let uv pick.
+Use `uv add <pkg>` / `uv add --dev <pkg>` to add a dependency — never
+hand-edit `pyproject.toml`.
+
+**Versions belong to tools, not to the agent.** Wherever a version literal
+appears, it must come from the tool that owns that ecosystem:
+
+| Domain                                | Tool / mechanism |
+| ------------------------------------- | ---------------- |
+| `mcp-kraken` package version          | `hatch-vcs` derives it from git tags. Never write a version in `pyproject.toml`. |
+| Python dependencies                   | `uv add <pkg>` — uv picks a compatible range. |
+| GitHub Actions                        | Pin to a major (`@v7`); Dependabot bumps it. |
+| Docker base images                    | Pin a major tag; refresh via Dependabot or an explicit `docker pull`. |
+| pre-commit hooks                      | `pre-commit autoupdate`. |
+| Python interpreter                    | `uv python install`; CI matrix picks 3.12 / 3.13 / etc. |
+
+If the right version is unknowable without running the tool, run the tool —
+never guess.
 
 ## Auth model — two boundaries
 
@@ -124,8 +146,11 @@ Kraken itself enforce permissions over the wire. That fallback is in
   `errors.classify` when adding a new error category, not the call sites.
 - Do **not** call `git push --force` against `main` without an explicit
   user instruction.
-- Never write a `LICENSE` file or mention licensing in the code or docs
-  unless the user explicitly asks; the license decision is pending.
+- The project is licensed under **AGPL-3.0-only** ([LICENSE](LICENSE)).
+  New source files should carry an SPDX header
+  (`# SPDX-License-Identifier: AGPL-3.0-only`). Network use triggers the
+  Affero copyleft clause — a forked SaaS deployment must publish its
+  source modifications.
 - Tools that move funds/orders (`add_order`, `cancel_order`, `withdraw`,
   `wallet_transfer`, `allocate_earn`, etc.) are dangerous. In tests and
   documentation never invoke them with real credentials without an opt-in.

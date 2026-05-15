@@ -2,6 +2,8 @@
 name = "mcp-kraken"
 description = "MCP server exposing the Kraken cryptocurrency exchange REST API over HTTP with bearer-token authentication."
 readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [
     { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },

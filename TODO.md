@@ -1,5 +1,8 @@
 # Roadmap
 
+> **Active scope lives in [`PLAN.md`](PLAN.md).** This file tracks
+> longer-horizon items and explicit deferrals.
+
 Tracks features deferred beyond the initial REST-only release.
 
 ## v0.1.0 — URL-embedded bearer (`?apikey=` style)
@@ -89,6 +92,21 @@ References:
   [8707](https://www.rfc-editor.org/rfc/rfc8707.html),
   [OAuth 2.1 draft](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13)
 
+## Exchange surface (reorientation, see [`PLAN.md`](PLAN.md))
+
+- [ ] Switch the Kraken HTTP layer to **python-kraken-sdk** (Apache-2.0,
+      async clients) — PLAN PR-3.
+- [ ] **Kraken Futures REST** (live + demo via `demo-futures.kraken.com`)
+      — PR-6 / PR-7.
+- [ ] `dry_run=True` on every Spot order tool (Kraken `validate=true`) —
+      PR-5.
+- [ ] Confirm python-kraken-sdk coverage for Earn / Subaccounts / Export
+      reports against the
+      [SDK docs](https://python-kraken-sdk.readthedocs.io/en/stable);
+      keep an in-house wrapper for any uncovered endpoint.
+- [ ] `KRAKEN_*_FILE` env support (Docker / Compose / Swarm / Kubernetes
+      secrets) — PR-4.
+
 ## v1.x — Transport layers
 
 ### WebSocket v2 support
@@ -112,7 +130,8 @@ References:
 
 - [ ] Per-token Kraken credentials — let each MCP bearer token bind to a different Kraken API key, instead of one shared key for the whole server
 - [ ] Scope-based authorization on MCP tools (read-only token cannot call trading tools)
-- [ ] Rate-limit incoming MCP requests per token (independent of Kraken rate limit)
+- [ ] Per-token quota (opt-in via `--rate 60/min --daily 10000` at token create)
+      — PR-4, independent of Kraken's own outbound rate limits, off by default
 - [ ] Optional mTLS at the reverse proxy layer
 
 ## Operations
@@ -133,4 +152,28 @@ References:
 
 ## Documentation
 
-- [ ] Move Github Page in `docs/page` or `page` folder path
+- [ ] Migrate to **MkDocs Material** on GitHub Pages — single source of
+      truth, `mkdocstrings` for tool reference — PR-9.
+- [ ] "Connect" page per MCP client (Claude Desktop, ChatGPT, Gemini,
+      Cursor, VS Code, Claude Code, JetBrains, Ollama, LM Studio) — PR-9.
+- [ ] Demo-mode docs page covering Futures sandbox onboarding (separate
+      signup, key generation, key rotation) — PR-7.
+- [ ] Submit to MCP registries: smithery.ai, mcpmarket.com, glama.ai/mcp,
+      punkpeye/awesome-mcp-servers.
+
+## Release & community
+
+- [ ] **GitFlow migration**: rename `dev` → `develop`, add `release/*`
+      and `hotfix/*` branches, document GitHub Rulesets — PR-2.
+- [ ] **Docker Hub** mirror registry
+      (`docker.io/xavierbeheydt/mcp-kraken`) alongside GHCR — PR-8.
+- [ ] **Path-filtered CI**: run code workflows only on `src/**` /
+      `tests/**`, docs workflows only on `docs/**` — PR-8.
+- [ ] Grouped release notes via `.github/release.yml`; consider
+      `release-please` for changelog + auto release-PR flow — PR-8.
+- [ ] Automate release announcements through a self-hosted **Postiz**
+      instance (Mastodon, X, Bluesky, Reddit, Discord, LinkedIn,
+      Threads) — PR-8.
+- [ ] **Claude Code plugin bundle** (`.plugin`) packaging mcp-kraken +
+      crypto / investment skills — PR-10.
+

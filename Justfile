@@ -132,12 +132,12 @@ docker-run TAG="dev":
 
 # Bring up the compose stack.
 up:
-    docker compose up -d
+    docker compose -f docker/compose.yml up -d
 
 # Tear it down.
 down:
-    docker compose down
+    docker compose -f docker/compose.yml down
 
 # Tail compose logs.
 logs:
-    docker compose logs -f --tail=200
+    docker compose -f docker/compose.yml logs -f --tail=200
