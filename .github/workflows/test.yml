@@ -2,9 +2,9 @@ name: test
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main, develop]
   push:
-    branches: [dev]
+    branches: [develop]
   workflow_call: {}
 
 concurrency:
