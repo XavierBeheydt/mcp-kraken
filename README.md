@@ -1,6 +1,6 @@
 # mcp-kraken
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
 [![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
 [![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
@@ -268,11 +268,14 @@ The published image is `ghcr.io/xavierbeheydt/mcp-kraken`:
 | `dev`                    | dev-publish workflow  | Tip of the `dev` branch.       |
 | `dev-<sha7>`             | dev-publish workflow  | Per-commit tag on `dev`.       |
 
-The reference deployment uses [`compose.yml`](compose.yml):
+The reference deployment uses [`docker/compose.yml`](docker/compose.yml).
+Run it from the repository root:
 
 ```bash
 cp .env.example .env  # set KRAKEN_API_KEY / KRAKEN_API_SECRET
-docker compose up -d
+docker compose -f docker/compose.yml up -d
+# Or, via the Justfile wrapper:
+just up
 ```
 
 The container runs as a non-root user (`uid 10001`), with a read-only root
