@@ -123,7 +123,7 @@ Branch model (per [nvie.com GitFlow](https://nvie.com/posts/a-successful-git-bra
 
 | Branch     | Purpose                       | Protection |
 | ---------- | ----------------------------- | ---------- |
-| `main`     | latest released commit        | strong: PR + status checks + linear history + no force push + 1 review |
+| `main`     | latest released commit        | strong: PR + status checks + no force push + no deletion (merge commits kept, see `docs/contributing/branching.md`) |
 | `develop`  | integration branch            | PR + status checks + no force push |
 | `feature/*`| topic branches off `develop`  | none |
 | `release/*`| stabilisation, hotfix bundling| ruleset: PR-to-main, status checks |
@@ -138,7 +138,7 @@ Workflows after PR-8:
 | `docs.yml`              | push develop/main, PR            | docs        | `mkdocs build --strict` |
 | `develop-publish.yml`   | push develop                     | code        | image `:develop` + `:develop-<sha>` to GHCR + Docker Hub |
 | `release-candidate.yml` | tag `vX.Y.Z-rcN`                 | —           | image `:X.Y.Z-rcN`, wheel → TestPyPI, GH Release prerelease |
-| `release.yml`           | tag `vX.Y.Z` final               | —           | image semver tags, wheel → PyPI, GH Release, fast-forward main, kick `pages.yml`, post via Postiz |
+| `release.yml`           | tag `vX.Y.Z` final               | —           | guard (tag must be on `main`), image semver tags, wheel → PyPI, GH Release, kick `pages.yml`, post via Postiz |
 | `pages.yml`             | push main `docs/**` or release   | docs        | `mkdocs gh-deploy` |
 
 Code path filter (default): `src/**`, `tests/**`, `pyproject.toml`,
@@ -192,7 +192,8 @@ docs/
 ├── architecture.md
 ├── contributing/
 │   ├── branching.md        # GitFlow + branch protection setup
-│   └── release.md          # how to cut a release
+│   ├── conventions.md      # language, commits, branch names, code style
+│   └── release.md          # versioning scheme + how to cut a release
 └── roadmap.md
 ```
 
@@ -232,6 +233,7 @@ Tests mirror `src/` so each module has a dedicated test directory.
 | ----- | ----- |
 | PR-1  | This plan + AGENTS.md rename + versioning rule + `compose.yml` moved to `docker/` + **AGPL-3.0** license adoption. No runtime source changes. |
 | PR-2  | Branch rename `dev` → `develop` (done on GitHub); workflow refs (`develop-publish.yml`, `test.yml`, `codeql.yml`); README badges + ASCII diagram; CLAUDE.md branching section; GitHub Rulesets under `docs/contributing/rulesets/` + apply script + `docs/contributing/branching.md`. |
+| PR-2b | Agent/project configuration: slim `CLAUDE.md` pointing at README and `docs/`; `.agents` → `.claude` symlink + tracked `.claude/settings.json`; `docs/contributing/conventions.md` (Conventional Commits + branch prefixes, shared with the dotfiles repo), `docs/contributing/release.md` (`a.b.c` scheme), `docs/architecture.md`; tag ruleset; `main` keeps merge commits and no workflow pushes to it (`release.yml` gains the lineage guard). |
 | PR-3  | Migrate Spot to `python-kraken-sdk`; rename `kraken/` → `exchange/spot/`; tests mirror `src/`. |
 | PR-4  | Quota middleware (opt-in); Docker secret (`*_FILE`) env support. |
 | PR-5  | `dry_run` parameter on Spot order tools + tests. |

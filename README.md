@@ -257,6 +257,19 @@ just docker-build  # local image build
 
 Run `just` with no arguments for the full recipe list.
 
+Contributor documentation:
+
+- [docs/contributing/conventions.md](docs/contributing/conventions.md) —
+  language, Conventional Commits, branch names, code style.
+- [docs/contributing/branching.md](docs/contributing/branching.md) — GitFlow
+  branches and the GitHub protection rulesets.
+- [docs/contributing/release.md](docs/contributing/release.md) — versioning
+  scheme and how a release is cut.
+- [docs/architecture.md](docs/architecture.md) — module map, auth
+  boundaries, known traps.
+- [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md) — the short brief coding
+  agents read first.
+
 ## Docker
 
 The published image is `ghcr.io/xavierbeheydt/mcp-kraken`:
@@ -298,40 +311,48 @@ Both the `Dockerfile` `HEALTHCHECK` and `compose.yml` use this endpoint.
 ## Versioning & release flow
 
 Versions are derived from git tags via
-[hatch-vcs](https://github.com/ofek/hatch-vcs); there is no version number
-to bump in `pyproject.toml`.
+[hatch-vcs](https://github.com/ofek/hatch-vcs) — **the tag is the version**,
+there is no number to bump in `pyproject.toml`. Semantic versioning,
+`va.b.c`:
+
+| Position | Bumped by                                                          |
+| -------- | ------------------------------------------------------------------ |
+| `a`      | A breaking change: incompatible tool signature, removed config key or CLI command, token store that old versions cannot read. |
+| `b`      | A new backwards-compatible feature: new tool, new endpoint, new option. |
+| `c`      | Fixes and security: bug fixes, security fixes, dependency bumps, docs. |
+
+While the project is `0.x` (alpha, see the disclaimer below) a breaking
+change bumps the minor instead of the major.
 
 ```
-feature/* → PR → develop  →  develop-publish workflow → ghcr.io/…:develop[-sha]
-                                                        ↑
-                                                  test workflow
-
-      tag v1.2.3 on main →  release workflow → ghcr.io/…:1.2.3, :latest
-                                              + PyPI publish
-                                              + GitHub Release (auto notes)
-                                              + fast-forward main to the tag
+feat/* fix/* docs/*  ─PR─►  develop  ──►  develop-publish ──► ghcr.io/…:develop[-sha]
+                               │
+                               └─ release/vX.Y.Z ─PR─► main ─ tag vX.Y.Z ─► release
+                                                        │                    │
+                          hotfix/vX.Y.Z ─PR─────────────┘                    ├─ ghcr.io/…:X.Y.Z, :X.Y, :X, :latest
+                                                                             ├─ PyPI wheel (OIDC)
+                                                                             └─ GitHub Release + artifacts
 ```
 
-Branch conventions follow [GitFlow](docs/contributing/branching.md):
+Branches follow [GitFlow](docs/contributing/branching.md):
 
-- `main` — protected; always equals the latest released commit.
-- `develop` — default integration branch on GitHub; every push runs
+- `main` — protected; every commit is a release. It advances only through a
+  reviewed pull request; no workflow pushes to it, and a final `vX.Y.Z` tag
+  that is not contained in `main` fails the release.
+- `develop` — default integration branch on GitHub; every push runs the
   tests and republishes the `:develop` image.
-- `feature/*` topic branches → PR into `develop`.
-- `release/*` short-lived stabilisation branches → PR into `main`,
-  tagged on merge, back-merged to `develop`.
-- `hotfix/*` emergency branches off `main` → PR into `main` +
-  back-merge to `develop`.
-- Releases are cut by tagging the merge commit on `main` as `vX.Y.Z`.
-  The release workflow tests it, builds and pushes the image with
-  semver tags, opens a GitHub Release with auto-generated notes, and
-  fast-forwards `main` to the tag. If `main` cannot be fast-forwarded
-  (e.g. `main` has diverged) the workflow emits a warning and leaves
-  the merge for a human.
+- topic branches — `feat/<slug>`, `fix/<slug>`, `docs/<slug>`… off `develop`,
+  PR back into it.
+- `release/vX.Y.Z` — stabilisation off `develop`, PR into `main`, tagged on
+  the merge commit, back-merged into `develop`.
+- `hotfix/vX.Y.Z` — emergency fix off `main`, same ending.
 
-To prerelease, tag `v1.2.3-rc1`: the workflow builds and pushes
-`1.2.3-rc1`, `1.2-rc1`, `1-rc1`, marks the GitHub Release as prerelease, and
-does not publish the `:latest` tag.
+To prerelease, tag a `release/*` branch `v1.2.3-rc1`: the workflow pushes the
+`1.2.3-rc1`, `1.2-rc1` and `1-rc1` images, publishes the wheel to TestPyPI,
+marks the GitHub Release as a prerelease, and leaves `:latest` alone.
+
+The full procedure — release, hotfix, prerelease, what each workflow job does
+— is in [docs/contributing/release.md](docs/contributing/release.md).
 
 ## Disclaimer
 
