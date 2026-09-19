@@ -17,10 +17,10 @@ focus on Spot-only / hand-rolled HTTP. Keep this file in sync with
    tests and humans can rehearse orders without placing them. Futures has
    no equivalent — use the Futures demo env.
 5. **Quota per token** as an opt-in feature; default = no limit.
-6. CI / CD moves to a **GitFlow** layout (`develop`, `release/*`,
-   `hotfix/*`) with path-filtered workflows, **GHCR + Docker Hub**
-   registries, automated release notes, and **Postiz**-driven community
-   announcements.
+6. CI / CD moves to a **GitFlow** layout — `dev` kept as the integration
+   branch, plus `release/*` and `hotfix/*` — with path-filtered workflows,
+   **GHCR + Docker Hub** registries, automated release notes, and
+   **Postiz**-driven community announcements.
 7. Docs migrate to **MkDocs Material** on GitHub Pages, single source of
    truth.
 
@@ -124,19 +124,19 @@ Branch model (per [nvie.com GitFlow](https://nvie.com/posts/a-successful-git-bra
 | Branch     | Purpose                       | Protection |
 | ---------- | ----------------------------- | ---------- |
 | `main`     | latest released commit        | strong: PR + status checks + no force push + no deletion (merge commits kept, see `docs/contributing/branching.md`) |
-| `develop`  | integration branch            | PR + status checks + no force push |
-| `feature/*`| topic branches off `develop`  | none |
+| `dev`  | integration branch            | PR + status checks + no force push |
+| `feature/*`| topic branches off `dev`  | none |
 | `release/*`| stabilisation, hotfix bundling| ruleset: PR-to-main, status checks |
-| `hotfix/*` | emergency from `main`         | ruleset: PR-to-main + back-merge to `develop` |
+| `hotfix/*` | emergency from `main`         | ruleset: PR-to-main + back-merge to `dev` |
 
 Workflows after PR-8:
 
 | File                    | Trigger                          | Path filter | What it does |
 | ----------------------- | -------------------------------- | ----------- | ------------ |
-| `test.yml`              | push develop, PR → develop/main  | code        | ruff + format + mypy + pytest (3.12, 3.13) |
+| `test.yml`              | push dev, PR → dev/main  | code        | ruff + format + mypy + pytest (3.12, 3.13) |
 | `codeql.yml`            | unchanged                        | —           | scan python + actions |
-| `docs.yml`              | push develop/main, PR            | docs        | `mkdocs build --strict` |
-| `develop-publish.yml`   | push develop                     | code        | image `:develop` + `:develop-<sha>` to GHCR + Docker Hub |
+| `docs.yml`              | push dev/main, PR            | docs        | `mkdocs build --strict` |
+| `dev-publish.yml`   | push dev                     | code        | image `:dev` + `:dev-<sha>` to GHCR + Docker Hub |
 | `release-candidate.yml` | tag `vX.Y.Z-rcN`                 | —           | image `:X.Y.Z-rcN`, wheel → TestPyPI, GH Release prerelease |
 | `release.yml`           | tag `vX.Y.Z` final               | —           | guard (tag must be on `main`), image semver tags, wheel → PyPI, GH Release, kick `pages.yml`, post via Postiz |
 | `pages.yml`             | push main `docs/**` or release   | docs        | `mkdocs gh-deploy` |
@@ -232,7 +232,7 @@ Tests mirror `src/` so each module has a dedicated test directory.
 | PR    | Scope |
 | ----- | ----- |
 | PR-1  | This plan + AGENTS.md rename + versioning rule + `compose.yml` moved to `docker/` + **AGPL-3.0** license adoption. No runtime source changes. |
-| PR-2  | Branch rename `dev` → `develop` (done on GitHub); workflow refs (`develop-publish.yml`, `test.yml`, `codeql.yml`); README badges + ASCII diagram; CLAUDE.md branching section; GitHub Rulesets under `docs/contributing/rulesets/` + apply script + `docs/contributing/branching.md`. |
+| PR-2  | GitFlow on top of the existing `dev` integration branch (kept, not renamed): `release/*` + `hotfix/*`, workflow refs (`dev-publish.yml`, `test.yml`, `codeql.yml`); README badges + ASCII diagram; CLAUDE.md branching section; GitHub Rulesets under `docs/contributing/rulesets/` + apply script + `docs/contributing/branching.md`. |
 | PR-2b | Agent/project configuration: slim `CLAUDE.md` pointing at README and `docs/`; `.agents` → `.claude` symlink + tracked `.claude/settings.json`; `docs/contributing/conventions.md` (Conventional Commits + branch prefixes, shared with the dotfiles repo), `docs/contributing/release.md` (`a.b.c` scheme), `docs/architecture.md`; tag ruleset; `main` keeps merge commits and no workflow pushes to it (`release.yml` gains the lineage guard). |
 | PR-3  | Migrate Spot to `python-kraken-sdk`; rename `kraken/` → `exchange/spot/`; tests mirror `src/`. |
 | PR-4  | Quota middleware (opt-in); Docker secret (`*_FILE`) env support. |
@@ -243,8 +243,8 @@ Tests mirror `src/` so each module has a dedicated test directory.
 | PR-9  | MkDocs Material site; landing reborn in `index.md`; old `docs/index.html` removed. |
 | PR-10 | Claude Code plugin bundle (`.plugin`) shipping mcp-kraken + investment skills. |
 
-Each PR opens against `develop` (until PR-2 lands, it's `dev`), reviewed,
-merged, then released via GitFlow.
+Each PR opens against `dev`, reviewed, merged, then released via
+GitFlow.
 
 ## Open questions
 

@@ -15,7 +15,7 @@ src/mcp_kraken/
 └── tools/         # MCP tool registrations, one module per Kraken category
 tests/             # pytest; respx mocks the Kraken HTTP surface
 docker/            # Dockerfile + compose.yml (build context is the repo root)
-.github/workflows/ # test, develop-publish, release, pages, codeql
+.github/workflows/ # test, dev-publish, release, pages, codeql
 docs/              # GitHub Pages site + contributor documentation
 ```
 

@@ -12,7 +12,7 @@ set -euo pipefail
 REPO="${1:-XavierBeheydt/mcp-kraken}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-for ruleset in main develop release-hotfix tags; do
+for ruleset in main dev release-hotfix tags; do
     file="${SCRIPT_DIR}/${ruleset}.json"
     name="$(jq -r .name "${file}")"
     echo "Applying ruleset: ${name} (from ${ruleset}.json)"

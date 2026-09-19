@@ -3,7 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![test](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/test.yml)
 [![release](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml/badge.svg)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/release.yml)
-[![develop image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/develop-publish.yml/badge.svg?branch=develop)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/develop-publish.yml)
+[![dev image](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml/badge.svg?branch=dev)](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/dev-publish.yml)
 [![CodeQL](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/XavierBeheydt/mcp-kraken/security/code-scanning)
 [![pages](https://github.com/XavierBeheydt/mcp-kraken/actions/workflows/pages.yml/badge.svg?branch=main)](https://xavierbeheydt.github.io/mcp-kraken/)
 [![GHCR](https://img.shields.io/github/v/tag/XavierBeheydt/mcp-kraken?label=ghcr.io&logo=docker&color=2496ED&sort=semver)](https://github.com/XavierBeheydt/mcp-kraken/pkgs/container/mcp-kraken)
@@ -278,8 +278,8 @@ The published image is `ghcr.io/xavierbeheydt/mcp-kraken`:
 | ------------------------ | --------------------- | ------------------------------ |
 | `latest`                 | release workflow      | Latest non-prerelease tag.     |
 | `vX.Y.Z`, `vX.Y`, `vX`   | release workflow      | Semver tags on every release.  |
-| `develop`                | develop-publish workflow | Tip of the `develop` branch.   |
-| `develop-<sha7>`         | develop-publish workflow | Per-commit tag on `develop`.   |
+| `dev`                    | dev-publish workflow  | Tip of the `dev` branch.       |
+| `dev-<sha7>`             | dev-publish workflow  | Per-commit tag on `dev`.       |
 
 The reference deployment uses [`docker/compose.yml`](docker/compose.yml).
 Run it from the repository root:
@@ -325,13 +325,13 @@ While the project is `0.x` (alpha, see the disclaimer below) a breaking
 change bumps the minor instead of the major.
 
 ```
-feat/* fix/* docs/*  ─PR─►  develop  ──►  develop-publish ──► ghcr.io/…:develop[-sha]
-                               │
-                               └─ release/vX.Y.Z ─PR─► main ─ tag vX.Y.Z ─► release
-                                                        │                    │
-                          hotfix/vX.Y.Z ─PR─────────────┘                    ├─ ghcr.io/…:X.Y.Z, :X.Y, :X, :latest
-                                                                             ├─ PyPI wheel (OIDC)
-                                                                             └─ GitHub Release + artifacts
+feat/* fix/* docs/*  ─PR─►  dev  ──►  dev-publish ──► ghcr.io/…:dev[-sha]
+                             │
+                             └─ release/vX.Y.Z ─PR─► main ─ tag vX.Y.Z ─► release
+                                                      │                    │
+                        hotfix/vX.Y.Z ─PR─────────────┘                    ├─ ghcr.io/…:X.Y.Z, :X.Y, :X, :latest
+                                                                           ├─ PyPI wheel (OIDC)
+                                                                           └─ GitHub Release + artifacts
 ```
 
 Branches follow [GitFlow](docs/contributing/branching.md):
@@ -339,12 +339,12 @@ Branches follow [GitFlow](docs/contributing/branching.md):
 - `main` — protected; every commit is a release. It advances only through a
   reviewed pull request; no workflow pushes to it, and a final `vX.Y.Z` tag
   that is not contained in `main` fails the release.
-- `develop` — default integration branch on GitHub; every push runs the
-  tests and republishes the `:develop` image.
-- topic branches — `feat/<slug>`, `fix/<slug>`, `docs/<slug>`… off `develop`,
+- `dev` — default integration branch on GitHub; every push runs the
+  tests and republishes the `:dev` image.
+- topic branches — `feat/<slug>`, `fix/<slug>`, `docs/<slug>`… off `dev`,
   PR back into it.
-- `release/vX.Y.Z` — stabilisation off `develop`, PR into `main`, tagged on
-  the merge commit, back-merged into `develop`.
+- `release/vX.Y.Z` — stabilisation off `dev`, PR into `main`, tagged on
+  the merge commit, back-merged into `dev`.
 - `hotfix/vX.Y.Z` — emergency fix off `main`, same ending.
 
 To prerelease, tag a `release/*` branch `v1.2.3-rc1`: the workflow pushes the

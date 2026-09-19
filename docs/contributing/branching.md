@@ -8,10 +8,10 @@ mcp-kraken follows the
 | Branch        | Purpose                                                             | Lifetime    |
 | ------------- | ------------------------------------------------------------------- | ----------- |
 | `main`        | Latest released commit. Protected, tag-only, never pushed to directly. | Permanent   |
-| `develop`     | Integration branch; **default branch on GitHub**.                    | Permanent   |
-| `<type>/<slug>` | Topic branches off `develop` — `feat/`, `fix/`, `docs/`, `refactor/`, `perf/`, `test/`, `ci/`, `build/`, `chore/`. | Short-lived |
+| `dev`         | Integration branch; **default branch on GitHub**.                    | Permanent   |
+| `<type>/<slug>` | Topic branches off `dev` — `feat/`, `fix/`, `docs/`, `refactor/`, `perf/`, `test/`, `ci/`, `build/`, `chore/`. | Short-lived |
 | `release/vX.Y.Z` | Stabilisation; PR into `main` when ready.                         | Short-lived |
-| `hotfix/vX.Y.Z` | Emergency fix off `main`; PR into `main` + back-merge to `develop`. | Short-lived |
+| `hotfix/vX.Y.Z` | Emergency fix off `main`; PR into `main` + back-merge to `dev`. | Short-lived |
 
 The topic-branch prefix is the Conventional Commit type the branch mostly
 carries, so the branch name and its commits agree — the full list and the
@@ -19,12 +19,12 @@ commit format live in [conventions.md](conventions.md).
 
 ### Day-to-day flow
 
-- New work → `feat/<slug>` (or `fix/`, `docs/`, …) from `develop` → PR into
-  `develop`.
-- Cut a release → `release/vX.Y.Z` from `develop` → stabilise → PR into
-  `main` → tag `vX.Y.Z` on the merge commit → back-merge `main` to `develop`.
+- New work → `feat/<slug>` (or `fix/`, `docs/`, …) from `dev` → PR into
+  `dev`.
+- Cut a release → `release/vX.Y.Z` from `dev` → stabilise → PR into
+  `main` → tag `vX.Y.Z` on the merge commit → back-merge `main` to `dev`.
 - Emergency → `hotfix/vX.Y.Z` from `main` → fix → PR into `main` → tag →
-  back-merge to `develop`.
+  back-merge to `dev`.
 
 Every one of those tags is a release; how the number is chosen is in
 [release.md](release.md).
@@ -39,7 +39,7 @@ Four rulesets live under [`rulesets/`](rulesets/) and are applied with
   push, no deletion, and the status checks `test (3.12)`, `test (3.13)`,
   `analyze (python)`, `analyze (actions)` under a strict (up-to-date)
   policy.
-- [`develop.json`](rulesets/develop.json) — moderate: pull request required,
+- [`dev.json`](rulesets/dev.json) — moderate: pull request required,
   no force push, no deletion, same status checks.
 - [`release-hotfix.json`](rulesets/release-hotfix.json) — light: no force
   push, tests only, no pull-request requirement so stabilisation pushes stay
@@ -61,7 +61,7 @@ keeps every change to `main` reviewable and CI-gated. Bump the count to `1`
 `main.json` deliberately does **not** require a linear history. GitFlow
 merges `release/*` and `hotfix/*` into `main` with a merge commit, and the
 release tag is placed on that commit; requiring linear history would force a
-squash and detach `main`'s history from the commits reviewed on `develop`.
+squash and detach `main`'s history from the commits reviewed on `dev`.
 
 ### Nothing automated pushes to `main`
 

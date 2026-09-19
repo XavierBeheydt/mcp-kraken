@@ -163,10 +163,11 @@ References:
 
 ## Release & community
 
-- [x] **GitFlow migration**: `dev` → `develop` renamed on GitHub
-      (2026-05-15); workflows + README + CLAUDE.md updated and rulesets
-      defined under `docs/contributing/rulesets/` in PR-2. Rulesets are
-      applied via `docs/contributing/rulesets/apply.sh`.
+- [x] **GitFlow migration**: the integration branch keeps its historical
+      name `dev` (no rename); `release/*` and `hotfix/*` added on top,
+      workflows + README + CLAUDE.md updated and rulesets defined under
+      `docs/contributing/rulesets/` in PR-2. Rulesets are applied via
+      `docs/contributing/rulesets/apply.sh`.
 - [ ] **Docker Hub** mirror registry
       (`docker.io/xavierbeheydt/mcp-kraken`) alongside GHCR — PR-8.
 - [ ] **Path-filtered CI**: run code workflows only on `src/**` /

@@ -12,7 +12,7 @@ tagged in git as `va.b.c`.
 | `c`      | patch | **Fixes and security** — bug fixes, security fixes, dependency bumps, docs and CI-only changes. |
 
 The bump follows mechanically from the Conventional Commit types merged into
-`develop` since the previous tag (see [conventions.md](conventions.md)):
+`dev` since the previous tag (see [conventions.md](conventions.md)):
 
 - any commit marked `!` or carrying a `BREAKING CHANGE:` footer → **major**
 - otherwise, any `feat:` → **minor**
@@ -36,21 +36,21 @@ change reached `main`, it ships — there is no "merged but unreleased" state
 on `main`.
 
 ```
-feat/* fix/* docs/*  ─PR─►  develop  ──►  develop-publish  ──►  ghcr.io/…:develop
-                               │
-                               └─ release/vX.Y.Z ─PR─► main ─ tag vX.Y.Z ─► release
-                                                        │                    │
-                          hotfix/vX.Y.Z ─PR─────────────┘                    ├─ ghcr.io/…:X.Y.Z, :X.Y, :X, :latest
-                                                                             ├─ PyPI (OIDC trusted publishing)
-                                                                             └─ GitHub Release + built artifacts
+feat/* fix/* docs/*  ─PR─►  dev  ──►  dev-publish  ──►  ghcr.io/…:dev
+                             │
+                             └─ release/vX.Y.Z ─PR─► main ─ tag vX.Y.Z ─► release
+                                                      │                    │
+                        hotfix/vX.Y.Z ─PR─────────────┘                    ├─ ghcr.io/…:X.Y.Z, :X.Y, :X, :latest
+                                                                           ├─ PyPI (OIDC trusted publishing)
+                                                                           └─ GitHub Release + built artifacts
 ```
 
 ## Cutting a release
 
-1. Make sure `develop` is green and holds everything you want to ship.
+1. Make sure `dev` is green and holds everything you want to ship.
 
    ```bash
-   git switch develop && git pull
+   git switch dev && git pull
    just check && uv build
    ```
 
@@ -75,25 +75,25 @@ feat/* fix/* docs/*  ─PR─►  develop  ──►  develop-publish  ──►
    git push origin v1.2.0
    ```
 
-6. Back-merge `main` into `develop` so the release commits (and the tag's
+6. Back-merge `main` into `dev` so the release commits (and the tag's
    history) are part of the integration branch:
 
    ```bash
-   git switch develop && git merge --no-ff main && git push
+   git switch dev && git merge --no-ff main && git push
    ```
 
 7. Delete the `release/*` branch.
 
 ## Hotfixes
 
-Same shape, starting from `main` instead of `develop`:
+Same shape, starting from `main` instead of `dev`:
 
 ```bash
 git switch main && git pull
 git switch -c hotfix/v1.2.1
 # fix, test, push, PR into main, merge
 git switch main && git pull && git tag -a v1.2.1 -m "v1.2.1" && git push origin v1.2.1
-git switch develop && git merge --no-ff main && git push   # never skip this
+git switch dev && git merge --no-ff main && git push   # never skip this
 ```
 
 ## Prereleases

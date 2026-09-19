@@ -1,11 +1,11 @@
-name: develop-publish
+name: dev-publish
 
 on:
   push:
-    branches: [develop]
+    branches: [dev]
 
 concurrency:
-  group: develop-publish
+  group: dev-publish
   cancel-in-progress: false  # never abandon a half-published image
 
 permissions:
@@ -43,8 +43,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=develop
-            type=sha,prefix=develop-
+            type=raw,value=dev
+            type=sha,prefix=dev-
 
       - name: Build and push
         uses: docker/build-push-action@v7

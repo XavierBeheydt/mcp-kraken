@@ -55,7 +55,7 @@ never invent a version number
 
 - `main` is protected: released commits only, reached through a reviewed PR,
   never pushed to directly and never force-pushed.
-- `develop` is the integration branch; work happens on `feat/<slug>`,
+- `dev` is the integration branch; work happens on `feat/<slug>`,
   `fix/<slug>`, `docs/<slug>`… branched off it.
 - [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
   `type(scope): description`, `!` or a `BREAKING CHANGE:` footer for breaking
