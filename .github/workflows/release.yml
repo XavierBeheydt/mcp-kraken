@@ -13,7 +13,32 @@ permissions:
   contents: read
 
 jobs:
+  guard:
+    name: tag lineage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Final tags must be released from main
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            echo "${GITHUB_REF_NAME} is a prerelease — cut from a release/* " \
+                 "branch, lineage check skipped."
+            exit 0
+          fi
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::${GITHUB_REF_NAME} does not point at a commit on " \
+                 "main. A release is a reviewed merge into main, then a tag " \
+                 "on that merge commit — see docs/contributing/release.md."
+            exit 1
+          fi
+          echo "${GITHUB_REF_NAME} is contained in main."
+
   test:
+    needs: guard
     uses: ./.github/workflows/test.yml
 
   build-dist:
@@ -141,29 +166,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-
-  fast-forward-main:
-    needs: [publish-image, build-dist]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fast-forward main to the tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${GITHUB_REF}"
-          git merge --ff-only "${GITHUB_REF}" || {
-            echo "::warning::main cannot be fast-forwarded to ${GITHUB_REF} — leave it for manual merge"
-            exit 0
-          }
-          git push origin main
 
   github-release:
     needs: [publish-image, build-dist]

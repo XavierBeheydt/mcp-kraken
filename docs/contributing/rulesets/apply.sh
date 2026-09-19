@@ -12,7 +12,7 @@ set -euo pipefail
 REPO="${1:-XavierBeheydt/mcp-kraken}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-for ruleset in main develop release-hotfix; do
+for ruleset in main develop release-hotfix tags; do
     file="${SCRIPT_DIR}/${ruleset}.json"
     name="$(jq -r .name "${file}")"
     echo "Applying ruleset: ${name} (from ${ruleset}.json)"
@@ -27,8 +27,6 @@ echo
 echo "Confirm in the GitHub UI:"
 echo "  https://github.com/${REPO}/settings/rules"
 echo
-echo "Manual follow-up: add 'github-actions[bot]' as a bypass actor on"
-echo "the 'main protection' ruleset so release.yml's fast-forward-main"
-echo "step can push to main without manual review."
-echo "  Settings -> Rules -> 'main protection' -> Bypass list -> Add"
-echo "  bypass -> github-actions[bot] -> Always"
+echo "No bypass actor is needed: no workflow pushes to main. It advances"
+echo "only through a reviewed pull request, and release.yml refuses a"
+echo "final vX.Y.Z tag that is not contained in main."
