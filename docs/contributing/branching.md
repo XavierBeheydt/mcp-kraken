@@ -73,21 +73,19 @@ rulesets need **no bypass actor** — the bypass list stays empty.
 ### Apply or refresh the rulesets
 
 ```bash
-./docs/contributing/rulesets/apply.sh
+./docs/contributing/rulesets/apply.sh              # XavierBeheydt/mcp-kraken
+./docs/contributing/rulesets/apply.sh owner/repo   # another repo
 ```
 
-The script POSTs each JSON to `repos/.../rulesets`. Re-running creates
-duplicates, so delete the previous ruleset in the GitHub UI first if you want
-to recreate it from scratch.
+Needs the `gh` CLI authenticated with admin scope on the repository. The
+script is idempotent: a ruleset that already exists under the same name is
+updated in place (`PUT`), any other is created (`POST`), so re-running it
+after editing a JSON file is the normal way to refresh the rules.
 
-To **update** an existing ruleset in place:
-
-```bash
-RULESET_ID="$(gh api repos/XavierBeheydt/mcp-kraken/rulesets \
-    --jq '.[] | select(.name=="main protection") | .id')"
-gh api -X PUT "repos/XavierBeheydt/mcp-kraken/rulesets/${RULESET_ID}" \
-    --input docs/contributing/rulesets/main.json
-```
+A ruleset is matched **by name**, not by the branch it targets. Renaming a
+branch therefore leaves its old ruleset behind, pointing at a ref that no
+longer exists — delete it in the GitHub UI (Settings → Rules) once the new
+one is in place.
 
 ## See also
 
