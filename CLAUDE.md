@@ -1,149 +1,103 @@
-# Project guidance — mcp-kraken
+# CLAUDE.md - AGENTS.md
 
-This file is the canonical project brief for Claude (and humans). Read it
-before making changes; keep it under 300 lines.
+Short project brief for coding agents and humans. It stays short on purpose:
+anything detailed lives in the [README](README.md) or under [`docs/`](docs/),
+and this file points there. `AGENTS.md` is a symlink to this file (see
+[agents.md](https://agents.md/)).
 
 ## What this project is
 
-An MCP server that wraps the **Kraken Spot REST API** and exposes it over
-HTTP with bearer-token authentication, plus a CLI for managing those bearer
-tokens. Built on FastMCP. Single process, stateless beyond a SQLite token
-store.
+An MCP server wrapping the **Kraken REST API**, exposed over HTTP with
+bearer-token authentication, plus a CLI to manage those tokens. Built on
+FastMCP; single process, stateless beyond a SQLite token store. Python 3.12+,
+managed with **uv**.
 
-WebSocket v2 and FIX are explicitly **out of scope for v1** — they live in
-[`TODO.md`](TODO.md).
+> **Active reorientation** toward a `python-kraken-sdk` backend, Spot +
+> Futures REST, a Futures demo mode, opt-in per-token quotas and a GitFlow
+> release process — the current scope is [`PLAN.md`](PLAN.md), the longer
+> horizon [`TODO.md`](TODO.md). WebSocket v2 and FIX stay out of scope.
 
-## Stack
+## Language
 
-- Python **3.12+** (CI matrix tests 3.12 and 3.13)
-- Dependency manager: **uv** (`uv add`, `uv sync`, `uv run`)
-- Build backend: **hatchling** + **hatch-vcs** — version is derived from the
-  git tag (`vX.Y.Z` → `X.Y.Z`). Never hand-edit a version field.
-- HTTP framework: **FastMCP** (streamable HTTP transport)
-- HTTP client: **httpx** (async)
-- Validation/config: **pydantic** + **pydantic-settings**
-- CLI: **typer** + **rich**
-- Tests: **pytest** + **pytest-asyncio** + **respx** (httpx mocks)
-- Quality: **ruff** (lint + format), **mypy** (strict)
-- Container: multi-stage **Dockerfile**, non-root uid 10001, distroless-style runtime
+All repo content — code, comments, docstrings, log and error messages,
+commits, docs — in English, always. In an interactive session, reply to the
+user in whatever language they use: that rule is about repo content, not
+conversation.
 
 ## Layout
 
-```
-src/mcp_kraken/
-├── __init__.py __main__.py cli.py config.py logging.py server.py
-├── auth/          # bearer-token store (SQLite), FastMCP TokenVerifier
-├── kraken/        # async REST client, HMAC signing, errors, permission map
-└── tools/         # MCP tool registrations, one module per Kraken category
-tests/             # pytest; uses respx to mock httpx
-docker/            # Dockerfile (build context is repo root)
-.github/workflows/ # test.yml, dev-publish.yml, release.yml
-```
+- `src/mcp_kraken/` — the package (src layout); `tests/` mirrors it
+- `docker/` — Dockerfile + compose.yml, build context is the repo root
+- `docs/` — GitHub Pages site and contributor docs, versioned with the code
+- `.claude/` — agent working dir; only `commands/`, `skills/`, `agents/` and
+  `settings.json` are tracked, the rest is local. `.agents` is a tracked
+  symlink to it, same idea as `AGENTS.md` → `CLAUDE.md`
+- `.tmp/` — untracked scratch space
 
-Source files live at `src/mcp_kraken/` (src layout). Docker files in `docker/`.
+Module map, auth boundaries and the non-obvious traps:
+[`docs/architecture.md`](docs/architecture.md).
 
-## Common commands
+## Commands
 
 ```bash
-just sync          # uv sync --all-extras --dev
-just check         # ruff + format-check + mypy + pytest (= what CI runs)
-just test          # pytest
-just fix           # auto-fix lint + reformat
-just serve         # plain HTTP on :8765/mcp
-just serve-https   # HTTPS using ./certs/{key,cert}.pem
-just serve-stdio   # stdio transport (for local Claude Desktop / uvx)
-just cert-local    # mkcert: generates locally-trusted TLS certs
-just docker-build  # local image build (tagged :dev)
+just sync     # uv sync --all-extras --dev
+just check    # ruff + format-check + mypy + pytest (= what CI runs)
+just fix      # auto-fix lint + reformat
+just serve    # plain HTTP on :8765/mcp
 ```
 
-Use `uv add <pkg>` / `uv add --dev <pkg>` — never edit `pyproject.toml`
-dependencies by hand. Never invent versions: let uv pick.
+`just` with no argument lists every recipe. Dependencies go in with
+`uv add <pkg>` / `uv add --dev <pkg>` — never hand-edit `pyproject.toml`, and
+never invent a version number
+([why](docs/contributing/conventions.md#versions-belong-to-tools-not-to-people)).
 
-## Auth model — two boundaries
+## Branches & commits
 
-| Boundary                              | Mechanism                                  |
-| ------------------------------------- | ------------------------------------------ |
-| MCP client → mcp-kraken (you control) | Opaque bearer tokens, SHA-256 hashed in DB |
-| mcp-kraken → Kraken                   | `KRAKEN_API_KEY` + HMAC-SHA512 signature   |
+- `main` is protected: released commits only, reached through a reviewed PR,
+  never pushed to directly and never force-pushed.
+- `dev` is the integration branch; work happens on `feat/<slug>`,
+  `fix/<slug>`, `docs/<slug>`… branched off it.
+- [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+  `type(scope): description`, `!` or a `BREAKING CHANGE:` footer for breaking
+  changes. The branch prefix is the type it carries.
 
-Bearer tokens are minted by `mcp-kraken token create NAME [--expires-in 90d]`,
-printed once, then only the hash is kept. `token list` shows ids only.
-`token revoke ID` flags one as revoked.
+Full rules — types, scopes, comment tags, code style:
+[`docs/contributing/conventions.md`](docs/contributing/conventions.md).
+Branch model and protection rulesets:
+[`docs/contributing/branching.md`](docs/contributing/branching.md).
 
-The stdio transport bypasses the bearer layer entirely (sessions are local
-by construction).
+## Versioning & releases
 
-## Kraken API key permissions
+No version lives in the source: `hatch-vcs` derives it from the git tag, so
+**the tag is the version**. Semantic versioning, `va.b.c`:
 
-On the first private call the client probes `/private/GetAPIKeyInfo`,
-parses the returned permission tree, and caches it. Subsequent tools check
-their required permission against that cache and reject early with
-`KrakenPermissionError` if missing. The mapping endpoint → permission lives
-in `kraken/permissions.py::PERMISSION_REQUIREMENTS`.
+- `a` — breaking change (incompatible tool signature, config key, CLI, token
+  store)
+- `b` — new backwards-compatible feature
+- `c` — bug fix, security fix, dependency or docs update
 
-**Note**: in some regions/accounts `GetAPIKeyInfo` returns `EGeneral:Unknown
-method`. The client catches this, logs a warning, and falls back to letting
-Kraken itself enforce permissions over the wire. That fallback is in
-`KrakenClient.get_permissions`.
+Every merge into `main` is a release: merge the `release/*` or `hotfix/*` PR,
+tag the merge commit `vX.Y.Z`, push the tag — that publishes the images, the
+PyPI wheel and the GitHub Release. While the project is `0.x`, a breaking
+change bumps the minor. Procedure, prereleases and workflow jobs:
+[`docs/contributing/release.md`](docs/contributing/release.md).
 
-## Versioning & release flow
+## Non-negotiables
 
-- No version number lives in source. `pyproject.toml` declares
-  `dynamic = ["version"]`; the build hook reads it from git tags.
-- Topic branches → PR into `dev`.
-- Every push to `dev` triggers the `dev-publish` workflow → image
-  `ghcr.io/xavierbeheydt/mcp-kraken:dev` (+ `:dev-<sha>`).
-- Tagging a commit on `dev` as `vX.Y.Z` triggers the `release` workflow:
-  runs the test workflow, builds + pushes semver-tagged images
-  (`:X.Y.Z`, `:X.Y`, `:X`, plus `:latest` for non-prereleases), publishes a
-  GitHub Release with auto-generated notes, and fast-forwards `main` to the
-  tag.
-- Tagging `vX.Y.Z` also publishes the package to **PyPI** via OIDC
-  trusted publishing (no token stored). Prerelease tags `vX.Y.Z-rcN` go to
-  TestPyPI instead. Setup lives on PyPI's "publishing" page and in the
-  GitHub `pypi` / `testpypi` environments.
-
-## Style conventions
-
-- All code, comments, docstrings, log messages, error strings in **English**.
-- Type annotations everywhere; mypy runs in strict mode.
-- Line length 100. ruff handles both lint and format (no black, no isort).
-- Tests aim for behaviour, not implementation: prefer respx-mocked Kraken
-  responses to monkey-patching internals.
-
-## Gotchas (read before changing tool signatures)
-
-- **Tool parameters of type `list[T] | None = None` lose their JSON-schema
-  `type: array` annotation** in the schema FastMCP exposes over MCP. Claude
-  Code passes such values as JSON-encoded strings, which Pydantic strict
-  mode then rejects. Use
-  `Annotated[list[T], Field(default_factory=list)]` (with `# noqa: B008`)
-  or a similar idiom that keeps Pydantic from collapsing the type.
-- Kraken returns errors as a `200 OK` with a non-empty `error` array, not
-  as HTTP errors. `KrakenClient._unwrap` classifies them — extend
-  `errors.classify` when adding a new error category, not the call sites.
-- Do **not** call `git push --force` against `main` without an explicit
-  user instruction.
-- Never write a `LICENSE` file or mention licensing in the code or docs
-  unless the user explicitly asks; the license decision is pending.
-- Tools that move funds/orders (`add_order`, `cancel_order`, `withdraw`,
-  `wallet_transfer`, `allocate_earn`, etc.) are dangerous. In tests and
-  documentation never invoke them with real credentials without an opt-in.
-
-## Pre-commit checklist
-
-```bash
-just check    # everything CI checks
-uv build      # confirm a wheel can be produced
-```
-
-Both must be green before pushing.
+- Never push (or force-push) to `main`, and never bypass its ruleset.
+- `just check` and `uv build` must both be green before pushing.
+- Tools that move funds or orders (`add_order`, `cancel_order`, `withdraw`,
+  `wallet_transfer`, `allocate_earn`, …) are never run against real
+  credentials without an explicit opt-in.
+- The project is **AGPL-3.0-only**; new source files carry
+  `# SPDX-License-Identifier: AGPL-3.0-only`.
 
 ## Where to look first
 
-- Adding a new Kraken endpoint as a tool → `tools/<category>.py` + add the
-  endpoint name to `PERMISSION_REQUIREMENTS` in `kraken/permissions.py`.
-- Changing transport behaviour → `server.py`.
-- Changing token lifecycle → `auth/store.py` + `auth/verifier.py`.
-- Changing CI → `.github/workflows/`.
-- Anything cross-cutting → discuss in an issue first.
+| Task                          | Start at                                        |
+| ----------------------------- | ----------------------------------------------- |
+| New Kraken endpoint as a tool | `tools/<category>.py` + `PERMISSION_REQUIREMENTS` in `kraken/permissions.py` |
+| Transport behaviour           | `server.py`                                      |
+| Token lifecycle               | `auth/store.py` + `auth/verifier.py`             |
+| CI / release plumbing         | `.github/workflows/`                             |
+| Anything cross-cutting        | Open an issue first                              |

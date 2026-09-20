@@ -54,6 +54,17 @@ certs/
 *.key
 *.crt
 
+# Claude / agents (agent-local working dir: worktrees, notes, local
+# settings) -- except the shared project tooling below, which stays tracked
+.claude/*
+!.claude/commands/
+!.claude/skills/
+!.claude/agents/
+!.claude/settings.json
+
+# Scratch notes / temporary files
+.tmp/
+
 # IDE
 .idea/
 .vscode/
