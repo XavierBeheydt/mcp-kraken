@@ -58,7 +58,11 @@ Conventions:
 - The Kraken reference is the source of truth:
   <https://docs.kraken.com/exchange/api-reference/overview> and its release
   notes <https://docs.kraken.com/api/docs/change-log>. Check both before
-  adding or changing a tool.
+  adding or changing a tool. The page index is <https://docs.kraken.com/llms.txt>.
+- Every PR that adds or changes a tool fills the "Kraken API reference" table
+  of the PR template: one row per endpoint touched, linking its reference page
+  (`https://docs.kraken.com/api-reference/<section>/<page>`), so the review
+  can be done against the docs.
 - Endpoint names are exact and case-sensitive (`BalanceEx`, `TradesHistory`,
   `WithdrawMethods`, `CancelAll`, `GetApiKeyInfo`). `EGeneral:Unknown method`
   means the name is wrong, not that the account lacks the feature.

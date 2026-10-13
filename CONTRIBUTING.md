@@ -17,6 +17,10 @@ Tasks are driven by [just](https://github.com/casey/just) and
 
 `just check` and `uv build` must both pass before a push.
 
+Pull requests follow [the template](.github/pull_request_template.md): a PR
+that adds or changes a tool links the Kraken reference page of every endpoint
+it touches, so it can be reviewed against the docs.
+
 ## Branches
 
 ```text
