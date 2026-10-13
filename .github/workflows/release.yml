@@ -1,9 +1,11 @@
+# Copyright (c) 2026 Xavier Beheydt <xavier.beheydt@gmail.com>
+
 name: release
 
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 concurrency:
   group: release-${{ github.ref }}
@@ -13,7 +15,24 @@ permissions:
   contents: read
 
 jobs:
+  # Releases are cut from main only: the tag must sit on a commit of main.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Require the tag to be on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main — tag the dev → main merge commit"
+            exit 1
+          fi
+
   test:
+    needs: guard
     uses: ./.github/workflows/test.yml
 
   build-dist:
@@ -86,7 +105,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+            type=raw,value=latest
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -103,7 +122,6 @@ jobs:
           sbom: true
 
   publish-pypi:
-    if: ${{ !contains(github.ref, '-') }}
     needs: [test, build-dist]
     runs-on: ubuntu-latest
     environment:
@@ -120,50 +138,6 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-testpypi:
-    if: ${{ contains(github.ref, '-') }}
-    needs: [test, build-dist]
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/mcp-kraken
-    permissions:
-      id-token: write
-    steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-  fast-forward-main:
-    needs: [publish-image, build-dist]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fast-forward main to the tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${GITHUB_REF}"
-          git merge --ff-only "${GITHUB_REF}" || {
-            echo "::warning::main cannot be fast-forwarded to ${GITHUB_REF} — leave it for manual merge"
-            exit 0
-          }
-          git push origin main
 
   github-release:
     needs: [publish-image, build-dist]
@@ -185,7 +159,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
-          prerelease: ${{ contains(github.ref, '-') }}
           name: v${{ needs.build-dist.outputs.version }}
           files: dist/*
           body: |

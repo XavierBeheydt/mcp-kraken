@@ -299,30 +299,24 @@ Versions are derived from git tags via
 to bump in `pyproject.toml`.
 
 ```
-        feature → PR → dev   →  dev-publish workflow → ghcr.io/…:dev[-sha]
-                                                      ↑
-                                                test workflow
-
-                  tag v1.2.3  →  release workflow    → ghcr.io/…:1.2.3, :latest
-                                                      + GitHub Release
-                                                      + fast-forward main to the tag
+feature/fix branch → PR → dev  →  dev-publish workflow → ghcr.io/…:dev[-sha]
+                           │
+                           └─ PR (merge commit) → main → tag vX.Y.Z
+                                                          │
+                                       release workflow ◄─┘
+                                       → PyPI, ghcr.io/…:X.Y.Z, :latest
+                                       + GitHub Release
 ```
 
-Branch conventions:
-
-- `main` — protected; always equals the latest released commit.
-- `dev` — default integration branch; every push runs tests and republishes
+- `main` — default branch, protected (pull request, merge commit only, CI
+  green); holds released code.
+- `dev` — permanent working branch; every push runs tests and republishes
   the `:dev` image.
-- topic branches → PR into `dev`.
-- Releases are cut by tagging the desired `dev` commit `vX.Y.Z`. The release
-  workflow tests it, builds and pushes the image with semver tags, opens a
-  GitHub Release with auto-generated notes, and fast-forwards `main` to the
-  tag. If `main` cannot be fast-forwarded (e.g. `main` has diverged) the
-  workflow emits a warning and leaves the merge for a human.
+- feature and fix branches start from `dev` and come back through a PR.
+- A release is the `dev` → `main` PR followed by a `vX.Y.Z` tag on its merge
+  commit. The release workflow refuses a tag that is not on `main`.
 
-To prerelease, tag `v1.2.3-rc1`: the workflow builds and pushes
-`1.2.3-rc1`, `1.2-rc1`, `1-rc1`, marks the GitHub Release as prerelease, and
-does not publish the `:latest` tag.
+Details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Disclaimer
 

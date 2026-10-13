@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Xavier Beheydt <xavier.beheydt@gmail.com>
+
 # mcp-kraken — development command runner.
 # Usage:   just <recipe>   (run `just` with no args for the list)
 
@@ -141,3 +143,31 @@ down:
 # Tail compose logs.
 logs:
     docker compose logs -f --tail=200
+
+# ----------------------------------------------------------------- repository
+
+# Make the GitHub rulesets match .github/rulesets/*.json: create or update
+# each one by name, delete any other ruleset. Needs gh (admin) and jq.
+rulesets REPO="XavierBeheydt/mcp-kraken":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    existing=$(gh api "repos/{{REPO}}/rulesets" --jq '.[] | "\(.id)\t\(.name)"')
+    keep=()
+    for f in .github/rulesets/*.json; do
+        name=$(jq -r .name "$f")
+        keep+=("$name")
+        id=$(awk -F'\t' -v n="$name" '$2 == n {print $1}' <<<"$existing")
+        if [[ -n "$id" ]]; then
+            gh api -X PUT "repos/{{REPO}}/rulesets/$id" --input "$f" >/dev/null
+            echo "updated  $name"
+        else
+            gh api -X POST "repos/{{REPO}}/rulesets" --input "$f" >/dev/null
+            echo "created  $name"
+        fi
+    done
+    while IFS=$'\t' read -r id name; do
+        [[ -z "$id" ]] && continue
+        printf '%s\n' "${keep[@]}" | grep -Fxq "$name" && continue
+        gh api -X DELETE "repos/{{REPO}}/rulesets/$id"
+        echo "deleted  $name"
+    done <<<"$existing"
