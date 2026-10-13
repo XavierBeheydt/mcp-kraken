@@ -2,6 +2,9 @@
 
 Tracks features deferred beyond the initial REST-only release.
 
+v0.2.0 rebuilds the Spot REST foundations against the current Kraken API;
+it is planned in the GitHub milestone `v0.2.0` and its issues, not here.
+
 ## v0.1.0 — URL-embedded bearer (`?apikey=` style)
 
 Support the Alpha Vantage / many-public-MCP-servers convention where the
@@ -39,7 +42,7 @@ same credential, not a second auth mechanism.
       added trivially if a compliance scenario requires header-only
       auth.
 
-## v0.2.0 — OAuth 2.1 remote auth
+## v0.3.0 — OAuth 2.1 remote auth
 
 Migrate the remote transport from opaque-bearer auth to the OAuth 2.1
 flow mandated by the MCP 2025-06-18 authorization spec, so that Claude
